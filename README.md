@@ -77,6 +77,7 @@ Comprehensive guidelines are available to help maintain code quality and consist
 ### Quick Start
 
 - **[Quick Reference Guide](QUICK_REFERENCE.md)** - ⚡ Fast reference for common tasks, commands, and best practices
+- **[Code Style Enforcement](ENFORCEMENT.md)** - 🛡️ How code quality is automatically enforced (IDE, pre-commit hooks, CI/CD)
 
 ### Development Guidelines
 

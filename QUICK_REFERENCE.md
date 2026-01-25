@@ -7,6 +7,8 @@ A quick reference guide for developers working on the Just Another Day Flutter p
 | Document | Purpose | When to Use |
 |----------|---------|-------------|
 | [README.md](README.md) | Project overview and setup | Getting started with the project |
+| [QUICK_REFERENCE.md](QUICK_REFERENCE.md) | Quick reference for developers | Daily development tasks |
+| [ENFORCEMENT.md](ENFORCEMENT.md) | Code style enforcement guide | Setting up IDE, pre-commit hooks |
 | [CONTRIBUTING.md](CONTRIBUTING.md) | Contribution guidelines | Before making your first contribution |
 | [ARCHITECTURE.md](ARCHITECTURE.md) | Architecture and design patterns | Planning new features or refactoring |
 | [CODE_STYLE.md](CODE_STYLE.md) | Code style and conventions | Writing or reviewing code |
@@ -23,6 +25,9 @@ cd Just-another-day
 
 # Install dependencies
 flutter pub get
+
+# Setup pre-commit hooks (enforces code quality)
+git config core.hooksPath .githooks
 ```
 
 ### Development

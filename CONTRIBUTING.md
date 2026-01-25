@@ -39,10 +39,16 @@ Thank you for your interest in contributing to Just Another Day! This document p
    ```bash
    flutter pub get
    ```
-4. Create a new branch:
+4. Setup pre-commit hooks (automatic code quality enforcement):
+   ```bash
+   git config core.hooksPath .githooks
+   ```
+5. Create a new branch:
    ```bash
    git checkout -b feature/your-feature-name
    ```
+
+See [ENFORCEMENT.md](ENFORCEMENT.md) for details on how code quality is automatically enforced.
 
 ## Development Workflow
 

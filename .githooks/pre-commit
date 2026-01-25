@@ -1,0 +1,82 @@
+#!/bin/bash
+# Pre-commit hook to enforce code quality standards
+# To install: Run `git config core.hooksPath .githooks`
+
+set -e
+
+echo "🔍 Running pre-commit checks..."
+
+# Check if Flutter is installed
+if ! command -v flutter &> /dev/null; then
+    echo "❌ Flutter is not installed or not in PATH"
+    echo "   Please install Flutter: https://flutter.dev/docs/get-started/install"
+    exit 1
+fi
+
+# Get list of staged Dart files
+STAGED_FILES=$(git diff --cached --name-only --diff-filter=ACM | grep -E '\.(dart)$' || true)
+
+if [ -z "$STAGED_FILES" ]; then
+    echo "✅ No Dart files to check"
+    exit 0
+fi
+
+echo "📝 Checking ${STAGED_FILES// /$'\n'   } files..."
+
+# Format check
+echo ""
+echo "1️⃣  Checking code formatting..."
+if ! dart format --set-exit-if-changed --line-length 80 $STAGED_FILES; then
+    echo ""
+    echo "❌ Code formatting issues found!"
+    echo "   Run: dart format lib test"
+    echo "   Or:  dart format --line-length 80 $STAGED_FILES"
+    exit 1
+fi
+echo "✅ Code formatting is correct"
+
+# Analyze code
+echo ""
+echo "2️⃣  Running static analysis..."
+if ! flutter analyze --no-pub 2>&1 | grep -q "No issues found"; then
+    echo ""
+    echo "❌ Code analysis found issues!"
+    echo "   Run: flutter analyze"
+    echo "   Fix all warnings and errors before committing"
+    exit 1
+fi
+echo "✅ Code analysis passed"
+
+# Check for common issues
+echo ""
+echo "3️⃣  Checking for common issues..."
+
+# Check for print statements
+if grep -r "print(" --include="*.dart" lib/ 2>/dev/null | grep -v "// ignore:" | grep -v "coverage:ignore" | grep -q .; then
+    echo ""
+    echo "⚠️  Warning: Found print() statements in lib/"
+    echo "   Consider using proper logging instead"
+    grep -r "print(" --include="*.dart" lib/ | grep -v "// ignore:" | grep -v "coverage:ignore" || true
+    echo ""
+    echo "   If these are intentional, add: // ignore: avoid_print"
+    echo "   Or use: debugPrint() for debug-only messages"
+    exit 1
+fi
+
+# Check for TODO comments
+if grep -r "TODO" --include="*.dart" $STAGED_FILES 2>/dev/null | grep -q .; then
+    echo ""
+    echo "⚠️  Warning: Found TODO comments in staged files"
+    grep -r "TODO" --include="*.dart" $STAGED_FILES || true
+    echo ""
+    echo "   Please create GitHub issues for TODOs instead of committing them"
+    read -p "   Continue anyway? (y/N) " -n 1 -r
+    echo
+    if [[ ! $REPLY =~ ^[Yy]$ ]]; then
+        exit 1
+    fi
+fi
+
+echo ""
+echo "✅ All pre-commit checks passed!"
+echo ""
