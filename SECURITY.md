@@ -87,24 +87,42 @@ Future<User> getUser(String id) async {
 
 ### Cross-Site Scripting (XSS) Prevention
 
-**Flutter's Text widget automatically escapes HTML, but be careful with HTML rendering:**
+**Flutter's Text widget automatically escapes HTML:**
 
 ```dart
-// Good: Flutter automatically escapes
-Text(userInput) // Safe by default
+// Good: Flutter automatically escapes by default
+Text(userInput) // Safe - Flutter escapes HTML entities
 
-// Avoid: Rendering HTML directly
-HtmlWidget(userInput) // Could be dangerous without sanitization
+// Caution: HTML rendering widgets need proper sanitization
+// Avoid using HTML rendering widgets unless absolutely necessary
+HtmlWidget(userInput) // Could be dangerous
 
-// Good: Sanitize HTML input
+// If you must render HTML, use a proper sanitization library
+// DO NOT use simple string replacement - it's insufficient and bypassable
+// Example of INSUFFICIENT approach (DO NOT USE):
+// html.replaceAll('<script>', '') // Can be bypassed with <sCrIpT>
+
+// Good: Use a proper HTML sanitization library
+import 'package:html_sanitizer/html_sanitizer.dart';
+
 String sanitizeHtml(String html) {
-  return html
-      .replaceAll('<script>', '')
-      .replaceAll('</script>', '')
-      .replaceAll('javascript:', '')
-      .replaceAll('onerror=', '')
-      .replaceAll('onclick=', '');
+  final sanitizer = HtmlSanitizer(
+    allowedTags: ['p', 'br', 'b', 'i', 'strong', 'em'],
+    allowedAttributes: {},
+  );
+  return sanitizer.sanitize(html);
 }
+
+// Best: Avoid rendering user-provided HTML altogether
+// Use Flutter's rich text widgets instead:
+RichText(
+  text: TextSpan(
+    children: [
+      TextSpan(text: 'Regular text'),
+      TextSpan(text: 'Bold text', style: TextStyle(fontWeight: FontWeight.bold)),
+    ],
+  ),
+)
 ```
 
 ### Sensitive Data

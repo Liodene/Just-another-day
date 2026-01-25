@@ -155,6 +155,10 @@ linter:
     - prefer_typing_uninitialized_variables
     - provide_deprecation_message
     - recursive_getters
+    # Note: require_trailing_commas enforces trailing commas for better
+    # git diffs and automatic formatting. This is a project standard.
+    # If working with external code that doesn't follow this, you can
+    # disable this rule locally with: // ignore: require_trailing_commas
     - require_trailing_commas
     - sized_box_for_whitespace
     - sized_box_shrink_expand
