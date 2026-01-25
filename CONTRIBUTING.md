@@ -22,7 +22,7 @@ Thank you for your interest in contributing to Just Another Day! This document p
 
 ### Prerequisites
 
-- Flutter SDK (>=3.0.0)
+- Flutter SDK (>=3.16.0)
 - Dart SDK
 - Git
 - A code editor (VS Code or Android Studio recommended)

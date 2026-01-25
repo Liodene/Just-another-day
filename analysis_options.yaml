@@ -6,6 +6,7 @@ analyzer:
     strict-casts: true
     strict-inference: true
     strict-raw-types: true
+    strict-null-safety: true
   errors:
     # Treat missing required parameters as errors
     missing_required_param: error

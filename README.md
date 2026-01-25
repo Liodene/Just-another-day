@@ -8,7 +8,7 @@ This project is a Flutter web application that demonstrates deployment to GitHub
 
 ### Prerequisites
 
-- Flutter SDK (>=3.0.0)
+- Flutter SDK (>=3.16.0)
 - Dart SDK
 - Chrome (for local development and testing)
 

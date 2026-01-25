@@ -336,18 +336,34 @@ Enable browser XSS protection:
 **Never store plain text passwords:**
 
 ```dart
-// Good: Hash passwords (backend)
+// IMPORTANT: Password hashing should ALWAYS be done on the backend
+// The following examples are for educational purposes only
+
+// Avoid: Using fast hashing algorithms like SHA-256
 import 'package:crypto/crypto.dart';
 import 'dart:convert';
 
-String hashPassword(String password) {
+String hashPasswordWrong(String password) {
   final bytes = utf8.encode(password);
   final hash = sha256.convert(bytes);
-  return hash.toString();
+  return hash.toString(); // INSECURE! Vulnerable to brute force
 }
 
-// Better: Use bcrypt or argon2 (backend)
-// Use a proper password hashing library
+// Good: Use bcrypt, scrypt, or argon2 (backend only)
+// Example using bcrypt (pseudocode for backend):
+// import 'package:bcrypt/bcrypt.dart';
+// 
+// String hashPassword(String password) {
+//   final salt = BCrypt.gensalt();
+//   return BCrypt.hashpw(password, salt);
+// }
+// 
+// bool verifyPassword(String password, String hash) {
+//   return BCrypt.checkpw(password, hash);
+// }
+
+// Frontend: Never hash passwords client-side
+// Always send passwords over HTTPS to backend for proper hashing
 ```
 
 **Implement password strength requirements:**
