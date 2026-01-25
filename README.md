@@ -74,6 +74,10 @@ The application is automatically deployed to GitHub Pages via GitHub Actions whe
 
 Comprehensive guidelines are available to help maintain code quality and consistency:
 
+### Quick Start
+
+- **[Quick Reference Guide](QUICK_REFERENCE.md)** - ⚡ Fast reference for common tasks, commands, and best practices
+
 ### Development Guidelines
 
 - **[Contributing Guide](CONTRIBUTING.md)** - Guidelines for contributing to the project, including:
