@@ -1,0 +1,43 @@
+name: Code Quality Check
+
+on:
+  push:
+    branches:
+      - '**'  # Run on all branches
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  code-quality:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.27.1'
+          channel: 'stable'
+          cache: true
+
+      - name: Get dependencies
+        run: flutter pub get
+
+      - name: Check code formatting
+        run: |
+          echo "🔍 Checking code formatting..."
+          if ! dart format --set-exit-if-changed --line-length 80 lib test; then
+            echo "❌ Code formatting issues found!"
+            echo "Run: dart format lib test"
+            exit 1
+          fi
+          echo "✅ Code formatting is correct"
+
+      - name: Run static analysis
+        run: |
+          echo "🔍 Running static analysis with 181 linting rules..."
+          flutter analyze
+          echo "✅ Static analysis passed"
