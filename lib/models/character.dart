@@ -12,6 +12,28 @@ class CharacterStats {
     this.agility = 1.0,
   });
 
+  /// Creates a [CharacterStats] instance from a JSON map.
+  factory CharacterStats.fromJson(Map<String, dynamic> json) {
+    return CharacterStats(
+      strength: (json['strength'] as num?)?.toDouble() ?? 1.0,
+      intelligence: (json['intelligence'] as num?)?.toDouble() ?? 1.0,
+      endurance: (json['endurance'] as num?)?.toDouble() ?? 1.0,
+      charisma: (json['charisma'] as num?)?.toDouble() ?? 1.0,
+      agility: (json['agility'] as num?)?.toDouble() ?? 1.0,
+    );
+  }
+
+  /// Converts this [CharacterStats] to a JSON map.
+  Map<String, dynamic> toJson() {
+    return {
+      'strength': strength,
+      'intelligence': intelligence,
+      'endurance': endurance,
+      'charisma': charisma,
+      'agility': agility,
+    };
+  }
+
   /// Physical power - affects combat and physical labor activities.
   double strength;
 
@@ -110,6 +132,30 @@ class Character {
   })  : stats = stats ?? CharacterStats(),
         _activityCompletions = activityCompletions ?? {};
 
+  /// Creates a [Character] instance from a JSON map.
+  factory Character.fromJson(Map<String, dynamic> json) {
+    final completionsJson = json['activityCompletions'] as Map<String, dynamic>?;
+    final completions = completionsJson?.map(
+      (key, value) => MapEntry(key, (value as num).toInt()),
+    );
+    return Character(
+      name: json['name'] as String? ?? 'Player',
+      stats: json['stats'] != null
+          ? CharacterStats.fromJson(json['stats'] as Map<String, dynamic>)
+          : null,
+      activityCompletions: completions,
+    );
+  }
+
+  /// Converts this [Character] to a JSON map.
+  Map<String, dynamic> toJson() {
+    return {
+      'name': name,
+      'stats': stats.toJson(),
+      'activityCompletions': _activityCompletions,
+    };
+  }
+
   /// The character's name.
   final String name;
 
@@ -143,6 +189,22 @@ class Character {
   /// Gets total completions across all activities.
   int get totalCompletions {
     return _activityCompletions.values.fold(0, (sum, count) => sum + count);
+  }
+
+  /// Gets a copy of the activity completions map.
+  Map<String, int> get activityCompletions =>
+      Map<String, int>.from(_activityCompletions);
+
+  /// Restores state from another character (used when loading a save).
+  void restoreFrom(Character other) {
+    stats.strength = other.stats.strength;
+    stats.intelligence = other.stats.intelligence;
+    stats.endurance = other.stats.endurance;
+    stats.charisma = other.stats.charisma;
+    stats.agility = other.stats.agility;
+    _activityCompletions
+      ..clear()
+      ..addAll(other._activityCompletions);
   }
 
   /// Simple power function for double base and int exponent.
