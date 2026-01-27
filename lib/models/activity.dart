@@ -131,7 +131,7 @@ class Activities {
     name: 'Working',
     description: 'Work a job to earn experience and improve your endurance.',
     baseDuration: 10.0,
-    difficulty: 5.0,
+    difficulty: 0.5,
     primaryStat: StatType.endurance,
     rewards: {
       StatType.endurance: 0.1,
@@ -144,7 +144,7 @@ class Activities {
     name: 'Studying',
     description: 'Study to improve your intelligence.',
     baseDuration: 15.0,
-    difficulty: 8.0,
+    difficulty: 0.8,
     primaryStat: StatType.intelligence,
     rewards: {
       StatType.intelligence: 0.15,
@@ -156,7 +156,7 @@ class Activities {
     name: 'Exercising',
     description: 'Work out to improve your strength and agility.',
     baseDuration: 8.0,
-    difficulty: 6.0,
+    difficulty: 0.6,
     primaryStat: StatType.strength,
     rewards: {
       StatType.strength: 0.1,
@@ -170,7 +170,7 @@ class Activities {
     name: 'Sparring',
     description: 'Practice combat to improve fighting abilities.',
     baseDuration: 12.0,
-    difficulty: 10.0,
+    difficulty: 1.0,
     primaryStat: StatType.agility,
     requirements: {
       StatType.strength: 3.0,
@@ -186,7 +186,7 @@ class Activities {
     name: 'Socializing',
     description: 'Spend time with others to improve your charisma.',
     baseDuration: 5.0,
-    difficulty: 3.0,
+    difficulty: 0.3,
     primaryStat: StatType.charisma,
     rewards: {
       StatType.charisma: 0.1,
