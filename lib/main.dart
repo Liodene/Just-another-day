@@ -173,23 +173,13 @@ class _GameScreenState extends State<GameScreen>
         backgroundColor: Theme.of(context).colorScheme.inversePrimary,
         title: const Text('Just Another Day'),
         actions: [
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 8),
-            child: GameTimeDisplay(gameTime: _activityManager.gameTime),
-          ),
-          ThemeSelector(
-            currentTheme: widget.themeProvider.currentTheme,
-            onThemeChanged: widget.themeProvider.setTheme,
-            onToggleDarkMode: widget.themeProvider.toggleDarkMode,
-          ),
-          SaveMenuButton(
+          ResponsiveAppBarActions(
+            gameTime: _activityManager.gameTime,
+            themeProvider: widget.themeProvider,
             saveManager: _saveManager,
             onImport: _handleImport,
-          ),
-          IconButton(
-            icon: Icon(_gameLoop.isPaused ? Icons.play_arrow : Icons.pause),
-            onPressed: _togglePause,
-            tooltip: _gameLoop.isPaused ? 'Resume' : 'Pause',
+            isPaused: _gameLoop.isPaused,
+            onTogglePause: _togglePause,
           ),
         ],
       ),
