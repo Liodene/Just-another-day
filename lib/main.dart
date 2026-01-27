@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'engine/activity_manager.dart';
 import 'engine/game_loop.dart';
 import 'models/character.dart';
+import 'widgets/widgets.dart';
 
 void main() {
   runApp(const MyApp());
@@ -75,8 +76,6 @@ class _GameScreenState extends State<GameScreen>
 
   @override
   Widget build(BuildContext context) {
-    final gameTime = _activityManager.gameTime;
-
     return Scaffold(
       appBar: AppBar(
         backgroundColor: Theme.of(context).colorScheme.inversePrimary,
@@ -84,49 +83,13 @@ class _GameScreenState extends State<GameScreen>
           children: [
             const Text('Just Another Day'),
             const SizedBox(width: 16),
-            Container(
-              padding: const EdgeInsets.symmetric(
-                horizontal: 12,
-                vertical: 4,
-              ),
-              decoration: BoxDecoration(
-                color: Theme.of(context).colorScheme.surface,
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  const Icon(Icons.calendar_today, size: 16),
-                  const SizedBox(width: 4),
-                  Text(
-                    'Day ${gameTime.dayCount}',
-                    style: Theme.of(context).textTheme.bodyMedium,
-                  ),
-                  const SizedBox(width: 12),
-                  const Icon(Icons.access_time, size: 16),
-                  const SizedBox(width: 4),
-                  Text(
-                    gameTime.formattedTime,
-                    style: Theme.of(context).textTheme.bodyMedium,
-                  ),
-                ],
-              ),
-            ),
+            GameTimeDisplay(gameTime: _activityManager.gameTime),
           ],
         ),
         actions: [
-          // Game loop control
           IconButton(
             icon: Icon(_gameLoop.isPaused ? Icons.play_arrow : Icons.pause),
-            onPressed: () {
-              setState(() {
-                if (_gameLoop.isPaused) {
-                  _gameLoop.resume();
-                } else {
-                  _gameLoop.pause();
-                }
-              });
-            },
+            onPressed: _togglePause,
             tooltip: _gameLoop.isPaused ? 'Resume' : 'Pause',
           ),
         ],
@@ -136,219 +99,24 @@ class _GameScreenState extends State<GameScreen>
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            // Character stats section
-            _buildStatsCard(),
+            StatsCard(character: _character),
             const SizedBox(height: 16),
-
-            // Current activity progress
-            _buildProgressCard(),
+            ActivityProgressCard(
+              progress: _activityManager.currentProgress,
+              autoRepeat: _activityManager.autoRepeat,
+              onAutoRepeatChanged: (value) {
+                _activityManager.autoRepeat = value;
+              },
+              onStopActivity: _activityManager.stopActivity,
+            ),
             const SizedBox(height: 16),
-
-            // Activity selection
             Expanded(
-              child: _buildActivitiesCard(),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildStatsCard() {
-    final stats = _character.stats;
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text(
-                  _character.name,
-                  style: Theme.of(context).textTheme.titleLarge,
-                ),
-                Text(
-                  'Total: ${_character.totalCompletions} completions',
-                  style: Theme.of(context).textTheme.bodyMedium,
-                ),
-              ],
-            ),
-            const SizedBox(height: 12),
-            _buildStatRow('Strength', stats.strength, Colors.red),
-            _buildStatRow('Intelligence', stats.intelligence, Colors.blue),
-            _buildStatRow('Endurance', stats.endurance, Colors.green),
-            _buildStatRow('Charisma', stats.charisma, Colors.orange),
-            _buildStatRow('Agility', stats.agility, Colors.purple),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildStatRow(String name, double value, Color color) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 4.0),
-      child: Row(
-        children: [
-          SizedBox(
-            width: 100,
-            child: Text(name),
-          ),
-          Expanded(
-            child: LinearProgressIndicator(
-              value: (value / 100).clamp(0.0, 1.0),
-              backgroundColor: color.withValues(alpha: 0.2),
-              valueColor: AlwaysStoppedAnimation<Color>(color),
-            ),
-          ),
-          const SizedBox(width: 8),
-          SizedBox(
-            width: 50,
-            child: Text(
-              value.toStringAsFixed(1),
-              textAlign: TextAlign.right,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildProgressCard() {
-    final progress = _activityManager.currentProgress;
-
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text(
-                  'Current Activity',
-                  style: Theme.of(context).textTheme.titleMedium,
-                ),
-                Row(
-                  children: [
-                    const Text('Auto-repeat'),
-                    Switch(
-                      value: _activityManager.autoRepeat,
-                      onChanged: (value) {
-                        _activityManager.autoRepeat = value;
-                      },
-                    ),
-                  ],
-                ),
-              ],
-            ),
-            const SizedBox(height: 12),
-            if (progress == null)
-              const Text(
-                'No activity in progress. Select an activity below.',
-                style: TextStyle(fontStyle: FontStyle.italic),
-              )
-            else ...[
-              Text(
-                progress.activity.name,
-                style: Theme.of(context).textTheme.bodyLarge,
-              ),
-              const SizedBox(height: 8),
-              LinearProgressIndicator(
-                value: progress.progress,
-              ),
-              const SizedBox(height: 4),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text('${(progress.progress * 100).toStringAsFixed(1)}%'),
-                  Text(
-                    '${progress.remainingTime.toStringAsFixed(1)}s remaining',
-                  ),
-                ],
-              ),
-              const SizedBox(height: 8),
-              ElevatedButton(
-                onPressed: () {
-                  _activityManager.stopActivity();
-                },
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.red,
-                  foregroundColor: Colors.white,
-                ),
-                child: const Text('Stop Activity'),
-              ),
-            ],
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildActivitiesCard() {
-    final activities = _activityManager.getAllActivities();
-
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'Activities',
-              style: Theme.of(context).textTheme.titleMedium,
-            ),
-            const SizedBox(height: 12),
-            Expanded(
-              child: ListView.builder(
-                itemCount: activities.length,
-                itemBuilder: (context, index) {
-                  final activity = activities[index];
-                  final meetsRequirements =
-                      activity.meetsRequirements(_character.stats);
-                  final isCurrentActivity =
-                      _activityManager.currentActivity?.id == activity.id;
-
-                  return Card(
-                    color: isCurrentActivity
-                        ? Theme.of(context).colorScheme.primaryContainer
-                        : null,
-                    child: ListTile(
-                      title: Text(activity.name),
-                      subtitle: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(activity.description),
-                          const SizedBox(height: 4),
-                          Text(
-                            'Duration: ${activity.calculateDuration(_character.stats, difficultyCoefficient: _character.getDifficultyCoefficient(activity.id)).toStringAsFixed(1)}s | '
-                            'x${_character.getCompletions(activity.id)}',
-                            style: Theme.of(context).textTheme.bodySmall,
-                          ),
-                          Text(
-                            'Rewards: ${_formatRewards(activity.rewards)}',
-                            style: Theme.of(context).textTheme.bodySmall,
-                          ),
-                        ],
-                      ),
-                      trailing: ElevatedButton(
-                        onPressed: meetsRequirements &&
-                                !_activityManager.hasActiveActivity
-                            ? () {
-                                _activityManager.startActivity(activity);
-                              }
-                            : null,
-                        child: Text(
-                          meetsRequirements ? 'Start' : 'Locked',
-                        ),
-                      ),
-                      isThreeLine: true,
-                    ),
-                  );
-                },
+              child: ActivitiesCard(
+                activities: _activityManager.getAllActivities(),
+                character: _character,
+                currentActivityId: _activityManager.currentActivity?.id,
+                hasActiveActivity: _activityManager.hasActiveActivity,
+                onStartActivity: _activityManager.startActivity,
               ),
             ),
           ],
@@ -357,10 +125,13 @@ class _GameScreenState extends State<GameScreen>
     );
   }
 
-  String _formatRewards(Map<StatType, double> rewards) {
-    return rewards.entries.map((e) {
-      final statName = e.key.name.substring(0, 3).toUpperCase();
-      return '+${e.value.toStringAsFixed(2)} $statName';
-    }).join(', ');
+  void _togglePause() {
+    setState(() {
+      if (_gameLoop.isPaused) {
+        _gameLoop.resume();
+      } else {
+        _gameLoop.pause();
+      }
+    });
   }
 }
