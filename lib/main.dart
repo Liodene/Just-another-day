@@ -87,7 +87,10 @@ class _GameScreenState extends State<GameScreen>
             const Text('Just Another Day'),
             const SizedBox(width: 16),
             Container(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+              padding: const EdgeInsets.symmetric(
+                horizontal: 12,
+                vertical: 4,
+              ),
               decoration: BoxDecoration(
                 color: Theme.of(context).colorScheme.surface,
                 borderRadius: BorderRadius.circular(8),
@@ -106,10 +109,13 @@ class _GameScreenState extends State<GameScreen>
                   const SizedBox(width: 4),
                   Text(
                     gameTime.formattedTime,
-                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                          fontFamily: 'monospace',
-                          fontFeatures: [const FontFeature.tabularFigures()],
-                        ),
+                    style:
+                        Theme.of(context).textTheme.bodyMedium?.copyWith(
+                              fontFamily: 'monospace',
+                              fontFeatures: [
+                                const FontFeature.tabularFigures(),
+                              ],
+                            ),
                   ),
                 ],
               ),
