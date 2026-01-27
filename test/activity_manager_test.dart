@@ -5,6 +5,7 @@ import 'package:just_another_day/engine/activity_manager.dart';
 import 'package:just_another_day/engine/game_loop.dart';
 import 'package:just_another_day/models/activity.dart';
 import 'package:just_another_day/models/character.dart';
+import 'package:just_another_day/models/planned_activity.dart';
 
 /// A fake ticker for testing that allows manual time control.
 class FakeTicker implements Ticker {
@@ -283,6 +284,301 @@ void main() {
       // Both working and studying should have saved progress
       expect(character.getSavedProgress('working'), closeTo(0.5, 0.01));
       expect(character.getSavedProgress('studying'), closeTo(0.3, 0.01));
+    });
+  });
+
+  group('ActivityManager plan time estimation', () {
+    late FakeTickerProvider tickerProvider;
+    late GameLoop gameLoop;
+    late Character character;
+    late ActivityManager activityManager;
+
+    setUp(() {
+      tickerProvider = FakeTickerProvider();
+      gameLoop = GameLoop(vsync: tickerProvider);
+      character = Character(name: 'TestPlayer');
+      activityManager = ActivityManager(
+        character: character,
+        gameLoop: gameLoop,
+      );
+      gameLoop.start();
+    });
+
+    tearDown(() {
+      activityManager.dispose();
+      gameLoop.dispose();
+    });
+
+    test('should account for difficulty and stats evolution in estimation', () {
+      // Add 3 completions of working
+      // Working: baseDuration=10, difficulty=0.5, primary=endurance
+      // Working rewards: endurance +0.1, charisma +0.05
+      final planned = PlannedActivity(
+        activity: Activities.working,
+        targetType: PlanTargetType.completions,
+        targetValue: 3,
+      );
+
+      activityManager.planner.addPlannedActivity(planned);
+
+      // With endurance=1.0:
+      // Completion 1: coef=1.0, end=1.0, dur = 10 * (0.5*1.0/1.0) = 5.0s
+      //   After: endurance = 1.1, completions = 1
+      // Completion 2: coef=1.1, end=1.1, dur = 10 * (0.5*1.1/1.1) = 5.0s
+      //   After: endurance = 1.2, completions = 2
+      // Completion 3: coef=1.21, end=1.2, dur = 10 * (0.5*1.21/1.2) = 5.04s
+      // Total = 5.0 + 5.0 + 5.04 = 15.04s
+      // Note: difficulty increase and stat increase roughly cancel out early on
+      final estimate = activityManager.estimatePlanTime();
+      expect(estimate, closeTo(15.04, 0.1));
+    });
+
+    test('should handle existing completions in estimation', () {
+      // Pre-add some completions
+      character.addCompletion('working');
+      character.addCompletion('working');
+      // Current coefficient for working = 1.1^2 = 1.21
+
+      final planned = PlannedActivity(
+        activity: Activities.working,
+        targetType: PlanTargetType.completions,
+        targetValue: 2,
+      );
+
+      activityManager.planner.addPlannedActivity(planned);
+
+      // With endurance=1.0, existing completions=2:
+      // Completion 1: coef=1.21, dur = 10 * (0.5*1.21/1.0) = 6.05s
+      //   After: endurance = 1.1, completions = 3
+      // Completion 2: coef=1.331, end=1.1, dur = 10 * (0.5*1.331/1.1) = 6.05s
+      final estimate = activityManager.estimatePlanTime();
+      expect(estimate, closeTo(12.1, 0.2));
+    });
+
+    test('should estimate time-based targets with evolving stats', () {
+      final planned = PlannedActivity(
+        activity: Activities.working,
+        targetType: PlanTargetType.inGameTime,
+        targetValue: 15, // 15 seconds of in-game time
+      );
+
+      activityManager.planner.addPlannedActivity(planned);
+
+      // Should account for completions happening within the time window
+      // and update stats/difficulty accordingly
+      final estimate = activityManager.estimatePlanTime();
+
+      // First completion takes 5s, second takes ~5s (stats offset difficulty)
+      // Third completion starts but only partial time remains
+      expect(estimate, equals(15)); // Time-based should equal target time
+    });
+
+    test('should handle multiple planned activities with evolution', () {
+      // First: 2 completions of working
+      final planned1 = PlannedActivity(
+        activity: Activities.working,
+        targetType: PlanTargetType.completions,
+        targetValue: 2,
+      );
+
+      // Second: 2 completions of studying
+      final planned2 = PlannedActivity(
+        activity: Activities.studying,
+        targetType: PlanTargetType.completions,
+        targetValue: 2,
+      );
+
+      activityManager.planner.addPlannedActivity(planned1);
+      activityManager.planner.addPlannedActivity(planned2);
+
+      final estimate = activityManager.estimatePlanTime();
+
+      // Working improves endurance, studying uses intelligence
+      // Stats from working don't directly help studying
+      // But the estimation should still be reasonable
+      expect(estimate, greaterThan(0));
+      expect(estimate.isFinite, isTrue);
+    });
+
+    test('should return infinity for unlimited activities', () {
+      final planned = PlannedActivity(
+        activity: Activities.working,
+        targetType: PlanTargetType.unlimited,
+      );
+
+      activityManager.planner.addPlannedActivity(planned);
+
+      final estimate = activityManager.estimatePlanTime();
+      expect(estimate, equals(double.infinity));
+    });
+
+    test('should return 0 for empty plan', () {
+      final estimate = activityManager.estimatePlanTime();
+      expect(estimate, equals(0));
+    });
+  });
+
+  group('ActivityManager removePlannedActivity', () {
+    late FakeTickerProvider tickerProvider;
+    late GameLoop gameLoop;
+    late Character character;
+    late ActivityManager activityManager;
+
+    setUp(() {
+      tickerProvider = FakeTickerProvider();
+      gameLoop = GameLoop(vsync: tickerProvider);
+      character = Character(name: 'TestPlayer');
+      activityManager = ActivityManager(
+        character: character,
+        gameLoop: gameLoop,
+      );
+      gameLoop.start();
+    });
+
+    tearDown(() {
+      activityManager.dispose();
+      gameLoop.dispose();
+    });
+
+    test('should remove non-current activity without affecting current', () {
+      // Add two activities to plan
+      activityManager.planner.addPlannedActivity(
+        PlannedActivity(
+          activity: Activities.working,
+          targetType: PlanTargetType.completions,
+          targetValue: 2,
+        ),
+      );
+      activityManager.planner.addPlannedActivity(
+        PlannedActivity(
+          activity: Activities.studying,
+          targetType: PlanTargetType.completions,
+          targetValue: 1,
+        ),
+      );
+
+      // Start the plan
+      activityManager.startPlan();
+      expect(activityManager.currentActivity?.id, equals('working'));
+      expect(activityManager.planner.queue.length, equals(2));
+
+      // Remove the second (non-current) activity
+      final removed = activityManager.removePlannedActivity(1);
+
+      expect(removed?.activity.id, equals('studying'));
+      expect(activityManager.planner.queue.length, equals(1));
+      // Current activity should still be running
+      expect(activityManager.currentActivity?.id, equals('working'));
+      expect(activityManager.hasActiveActivity, isTrue);
+    });
+
+    test('should stop current activity and move to next when removing first',
+        () {
+      // Add two activities to plan
+      activityManager.planner.addPlannedActivity(
+        PlannedActivity(
+          activity: Activities.working,
+          targetType: PlanTargetType.completions,
+          targetValue: 2,
+        ),
+      );
+      activityManager.planner.addPlannedActivity(
+        PlannedActivity(
+          activity: Activities.studying,
+          targetType: PlanTargetType.completions,
+          targetValue: 1,
+        ),
+      );
+
+      // Start the plan
+      activityManager.startPlan();
+      expect(activityManager.currentActivity?.id, equals('working'));
+
+      // Get some progress on working
+      tickerProvider.ticker!.advance(const Duration(milliseconds: 2000));
+      expect(activityManager.currentProgress!.progress, greaterThan(0));
+
+      // Remove the current (first) activity
+      final removed = activityManager.removePlannedActivity(0);
+
+      expect(removed?.activity.id, equals('working'));
+      expect(activityManager.planner.queue.length, equals(1));
+      // Should have moved to studying
+      expect(activityManager.currentActivity?.id, equals('studying'));
+      expect(activityManager.hasActiveActivity, isTrue);
+      // Progress should be saved for working
+      expect(character.getSavedProgress('working'), greaterThan(0));
+    });
+
+    test('should stop activity when removing only planned activity', () {
+      // Add one activity to plan
+      activityManager.planner.addPlannedActivity(
+        PlannedActivity(
+          activity: Activities.working,
+          targetType: PlanTargetType.completions,
+          targetValue: 2,
+        ),
+      );
+
+      // Start the plan
+      activityManager.startPlan();
+      expect(activityManager.currentActivity?.id, equals('working'));
+
+      // Get some progress
+      tickerProvider.ticker!.advance(const Duration(milliseconds: 2000));
+
+      // Remove the only activity
+      final removed = activityManager.removePlannedActivity(0);
+
+      expect(removed?.activity.id, equals('working'));
+      expect(activityManager.planner.queue.length, equals(0));
+      // Should have stopped - no more activities
+      expect(activityManager.hasActiveActivity, isFalse);
+      // Progress should be saved
+      expect(character.getSavedProgress('working'), greaterThan(0));
+    });
+
+    test('should return null for invalid index', () {
+      activityManager.planner.addPlannedActivity(
+        PlannedActivity(
+          activity: Activities.working,
+          targetType: PlanTargetType.completions,
+          targetValue: 1,
+        ),
+      );
+
+      expect(activityManager.removePlannedActivity(-1), isNull);
+      expect(activityManager.removePlannedActivity(5), isNull);
+      expect(activityManager.planner.queue.length, equals(1));
+    });
+
+    test('should not affect activity if plan not started', () {
+      // Add activities but don't start the plan
+      activityManager.planner.addPlannedActivity(
+        PlannedActivity(
+          activity: Activities.working,
+          targetType: PlanTargetType.completions,
+          targetValue: 2,
+        ),
+      );
+      activityManager.planner.addPlannedActivity(
+        PlannedActivity(
+          activity: Activities.studying,
+          targetType: PlanTargetType.completions,
+          targetValue: 1,
+        ),
+      );
+
+      expect(activityManager.hasActiveActivity, isFalse);
+
+      // Remove first activity
+      final removed = activityManager.removePlannedActivity(0);
+
+      expect(removed?.activity.id, equals('working'));
+      expect(activityManager.planner.queue.length, equals(1));
+      expect(activityManager.planner.currentPlanned?.activity.id, 'studying');
+      // Still no active activity
+      expect(activityManager.hasActiveActivity, isFalse);
     });
   });
 }
