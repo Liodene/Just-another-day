@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 
 import 'engine/activity_manager.dart';
 import 'engine/game_loop.dart';
-import 'models/activity.dart';
 import 'models/character.dart';
 
 void main() {

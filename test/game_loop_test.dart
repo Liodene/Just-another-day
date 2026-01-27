@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/scheduler.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:just_another_day/engine/game_loop.dart';
@@ -67,6 +68,9 @@ class FakeTicker implements Ticker {
   void unscheduleTick() {}
 
   @override
+  String toString({bool debugIncludeStack = false}) => 'FakeTicker';
+
+  @override
   DiagnosticsNode describeForError(String name) {
     return DiagnosticsProperty<Ticker>(name, this);
   }
@@ -124,7 +128,7 @@ void main() {
 
     test('should call callbacks with delta time', () {
       final deltaTimes = <double>[];
-      gameLoop.addCallback((dt) => deltaTimes.add(dt));
+      gameLoop.addCallback(deltaTimes.add);
       gameLoop.start();
 
       // First tick at 16ms

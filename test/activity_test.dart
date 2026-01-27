@@ -43,15 +43,15 @@ void main() {
     });
 
     test('meetsRequirements should check all requirements', () {
-      final activityWithRequirements = Activity(
+      const activityWithRequirements = Activity(
         id: 'advanced',
         name: 'Advanced',
         description: 'Requires high stats',
         baseDuration: 10.0,
         difficulty: 10.0,
         primaryStat: StatType.strength,
-        rewards: const {},
-        requirements: const {
+        rewards: {},
+        requirements: {
           StatType.strength: 5.0,
           StatType.intelligence: 3.0,
         },
