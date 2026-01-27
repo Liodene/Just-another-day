@@ -68,8 +68,8 @@ class Activity {
   }
 
   @override
-  String toString() => 'Activity($name, duration: $baseDuration, '
-      'difficulty: $difficulty)';
+  String toString() =>
+      'Activity($name, duration: $baseDuration, difficulty: $difficulty)';
 }
 
 /// Represents the current progress of an activity.
@@ -111,8 +111,8 @@ class ActivityProgress {
   }
 
   @override
-  String toString() => 'ActivityProgress(${activity.name}, '
-      '${(progress * 100).toStringAsFixed(1)}%)';
+  String toString() =>
+      'ActivityProgress(${activity.name}, ${(progress * 100).toStringAsFixed(1)}%)';
 }
 
 /// Pre-defined activities for the game.
@@ -122,8 +122,7 @@ class Activities {
   static const working = Activity(
     id: 'working',
     name: 'Working',
-    description:
-        'Work a job to earn experience and improve your endurance.',
+    description: 'Work a job to earn experience and improve your endurance.',
     baseDuration: 10.0,
     difficulty: 5.0,
     primaryStat: StatType.endurance,
