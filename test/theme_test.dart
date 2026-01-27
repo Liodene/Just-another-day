@@ -183,7 +183,10 @@ void main() {
       await provider.setTheme(AppThemeType.lightGreen);
 
       final prefs = await SharedPreferences.getInstance();
-      expect(prefs.getString('app_theme'), equals(AppThemeType.lightGreen.name));
+      expect(
+        prefs.getString('app_theme'),
+        equals(AppThemeType.lightGreen.name),
+      );
 
       provider.dispose();
     });
