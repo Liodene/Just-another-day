@@ -269,27 +269,33 @@ class _AddPlannedActivityDialogState extends State<AddPlannedActivityDialog> {
   }
 
   Widget _buildActivityDropdown() {
-    return DropdownButtonFormField<Activity>(
-      value: _selectedActivity,
+    return InputDecorator(
       decoration: const InputDecoration(
         labelText: 'Activity',
         border: OutlineInputBorder(),
       ),
-      items: widget.activities
-          .where((a) => a.meetsRequirements(widget.character.stats))
-          .map((activity) {
-        final duration =
-            widget.activityManager.calculateActivityDuration(activity);
-        return DropdownMenuItem(
-          value: activity,
-          child: Text('${activity.name} (${duration.toStringAsFixed(1)}s)'),
-        );
-      }).toList(),
-      onChanged: (value) {
-        setState(() {
-          _selectedActivity = value;
-        });
-      },
+      child: DropdownButtonHideUnderline(
+        child: DropdownButton<Activity>(
+          value: _selectedActivity,
+          isExpanded: true,
+          isDense: true,
+          items: widget.activities
+              .where((a) => a.meetsRequirements(widget.character.stats))
+              .map((activity) {
+            final duration =
+                widget.activityManager.calculateActivityDuration(activity);
+            return DropdownMenuItem(
+              value: activity,
+              child: Text('${activity.name} (${duration.toStringAsFixed(1)}s)'),
+            );
+          }).toList(),
+          onChanged: (value) {
+            setState(() {
+              _selectedActivity = value;
+            });
+          },
+        ),
+      ),
     );
   }
 
