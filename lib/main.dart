@@ -3,8 +3,10 @@ import 'package:flutter/material.dart';
 import 'engine/activity_manager.dart';
 import 'engine/game_loop.dart';
 import 'engine/save_manager.dart';
+import 'models/activity.dart';
 import 'models/character.dart';
 import 'models/game_time.dart';
+import 'models/planned_activity.dart';
 import 'theme/theme.dart';
 import 'widgets/widgets.dart';
 
@@ -206,12 +208,19 @@ class _GameScreenState extends State<GameScreen>
                       onStopActivity: _activityManager.stopActivity,
                     ),
                     const SizedBox(height: 16),
+                    ActivityPlannerCard(
+                      activityManager: _activityManager,
+                      character: _character,
+                      onAddActivity: _showAddPlannedActivityDialog,
+                      onCancelPlan: _showCancelPlanDialog,
+                    ),
+                    const SizedBox(height: 16),
                     ActivitiesCard(
                       activities: _activityManager.getAllActivities(),
                       character: _character,
                       currentActivityId: _activityManager.currentActivity?.id,
                       hasActiveActivity: _activityManager.hasActiveActivity,
-                      onStartActivity: _activityManager.startActivity,
+                      onStartActivity: _handleStartActivity,
                     ),
                   ],
                 ),
@@ -221,6 +230,51 @@ class _GameScreenState extends State<GameScreen>
         ),
       ),
     );
+  }
+
+  Future<void> _showAddPlannedActivityDialog() async {
+    final result = await showDialog<PlannedActivity>(
+      context: context,
+      builder: (context) => AddPlannedActivityDialog(
+        activities: _activityManager.getAllActivities(),
+        character: _character,
+        activityManager: _activityManager,
+      ),
+    );
+
+    if (result != null) {
+      _activityManager.planner.addPlannedActivity(result);
+    }
+  }
+
+  Future<void> _showCancelPlanDialog() async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => const CancelPlanDialog(),
+    );
+
+    if (confirmed ?? false) {
+      _activityManager.cancelPlan();
+    }
+  }
+
+  Future<void> _handleStartActivity(Activity activity) async {
+    // If there's an active plan, show confirmation dialog
+    if (_activityManager.planner.hasPlannedActivities) {
+      final confirmed = await showDialog<bool>(
+        context: context,
+        builder: (context) => SwitchActivityDialog(newActivity: activity),
+      );
+
+      if (confirmed != true) {
+        return;
+      }
+
+      // Cancel the plan and start the new activity
+      _activityManager.cancelPlan();
+    }
+
+    _activityManager.startActivity(activity, force: true);
   }
 
   void _togglePause() {
