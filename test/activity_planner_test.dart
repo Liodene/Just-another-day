@@ -117,27 +117,33 @@ void main() {
       final removed = planner.removeAt(0);
       expect(removed, isNull);
 
-      planner.addPlannedActivity(PlannedActivity(
-        activity: Activities.working,
-        targetType: PlanTargetType.completions,
-        targetValue: 5,
-      ),);
+      planner.addPlannedActivity(
+        PlannedActivity(
+          activity: Activities.working,
+          targetType: PlanTargetType.completions,
+          targetValue: 5,
+        ),
+      );
 
       final removedInvalid = planner.removeAt(5);
       expect(removedInvalid, isNull);
     });
 
     test('should clear all planned activities', () {
-      planner.addPlannedActivity(PlannedActivity(
-        activity: Activities.working,
-        targetType: PlanTargetType.completions,
-        targetValue: 5,
-      ),);
-      planner.addPlannedActivity(PlannedActivity(
-        activity: Activities.studying,
-        targetType: PlanTargetType.inGameTime,
-        targetValue: 3600,
-      ),);
+      planner.addPlannedActivity(
+        PlannedActivity(
+          activity: Activities.working,
+          targetType: PlanTargetType.completions,
+          targetValue: 5,
+        ),
+      );
+      planner.addPlannedActivity(
+        PlannedActivity(
+          activity: Activities.studying,
+          targetType: PlanTargetType.inGameTime,
+          targetValue: 3600,
+        ),
+      );
 
       planner.clearPlan();
 
@@ -278,27 +284,33 @@ void main() {
     test('should report canAddActivity correctly', () {
       expect(planner.canAddActivity(), isTrue);
 
-      planner.addPlannedActivity(PlannedActivity(
-        activity: Activities.working,
-        targetType: PlanTargetType.completions,
-        targetValue: 5,
-      ),);
+      planner.addPlannedActivity(
+        PlannedActivity(
+          activity: Activities.working,
+          targetType: PlanTargetType.completions,
+          targetValue: 5,
+        ),
+      );
       expect(planner.canAddActivity(), isTrue);
 
-      planner.addPlannedActivity(PlannedActivity(
-        activity: Activities.studying,
-        targetType: PlanTargetType.unlimited,
-      ),);
+      planner.addPlannedActivity(
+        PlannedActivity(
+          activity: Activities.studying,
+          targetType: PlanTargetType.unlimited,
+        ),
+      );
       expect(planner.canAddActivity(), isFalse);
     });
 
     test('should report isCurrentUnlimited correctly', () {
       expect(planner.isCurrentUnlimited, isFalse);
 
-      planner.addPlannedActivity(PlannedActivity(
-        activity: Activities.working,
-        targetType: PlanTargetType.unlimited,
-      ),);
+      planner.addPlannedActivity(
+        PlannedActivity(
+          activity: Activities.working,
+          targetType: PlanTargetType.unlimited,
+        ),
+      );
       expect(planner.isCurrentUnlimited, isTrue);
     });
 
@@ -306,11 +318,13 @@ void main() {
       var notifyCount = 0;
       planner.addListener(() => notifyCount++);
 
-      planner.addPlannedActivity(PlannedActivity(
-        activity: Activities.working,
-        targetType: PlanTargetType.completions,
-        targetValue: 2,
-      ),);
+      planner.addPlannedActivity(
+        PlannedActivity(
+          activity: Activities.working,
+          targetType: PlanTargetType.completions,
+          targetValue: 2,
+        ),
+      );
       expect(notifyCount, equals(1));
 
       planner.recordCompletion();
