@@ -12,7 +12,7 @@ void main() {
         name: 'Test Activity',
         description: 'A test activity',
         baseDuration: 10.0,
-        difficulty: 5.0,
+        difficulty: 0.5,
         primaryStat: StatType.strength,
         rewards: {
           StatType.strength: 0.5,
@@ -22,17 +22,17 @@ void main() {
     });
 
     test('calculateDuration should scale with character stats', () {
-      // With strength = 1, difficulty = 5: duration = 10 * (5/1) = 50
+      // With strength = 1, difficulty = 0.5: duration = 10 * (0.5/1) = 5
       final weakStats = CharacterStats(strength: 1.0);
-      expect(testActivity.calculateDuration(weakStats), equals(50.0));
+      expect(testActivity.calculateDuration(weakStats), equals(5.0));
 
-      // With strength = 5, difficulty = 5: duration = 10 * (5/5) = 10
+      // With strength = 5, difficulty = 0.5: multiplier = 0.5/5 = 0.1 (clamped), duration = 10 * 0.1 = 1
       final matchedStats = CharacterStats(strength: 5.0);
-      expect(testActivity.calculateDuration(matchedStats), equals(10.0));
+      expect(testActivity.calculateDuration(matchedStats), equals(1.0));
 
-      // With strength = 10, difficulty = 5: duration = 10 * (5/10) = 5
+      // With strength = 10, difficulty = 0.5: multiplier = 0.5/10 = 0.05 (clamped to 0.1), duration = 10 * 0.1 = 1
       final strongStats = CharacterStats(strength: 10.0);
-      expect(testActivity.calculateDuration(strongStats), equals(5.0));
+      expect(testActivity.calculateDuration(strongStats), equals(1.0));
     });
 
     test('calculateDuration should clamp multiplier', () {
@@ -43,20 +43,20 @@ void main() {
     });
 
     test('calculateDuration should apply difficulty coefficient', () {
-      final stats = CharacterStats(strength: 5.0);
+      final stats = CharacterStats(strength: 0.5);
 
-      // Without coefficient (default 1.0): duration = 10 * (5/5) = 10
+      // Without coefficient (default 1.0): duration = 10 * (0.5/0.5) = 10
       expect(testActivity.calculateDuration(stats), equals(10.0));
 
-      // With coefficient 1.1: effectiveDiff = 5 * 1.1 = 5.5
-      // duration = 10 * (5.5/5) = 11
+      // With coefficient 1.1: effectiveDiff = 0.5 * 1.1 = 0.55
+      // duration = 10 * (0.55/0.5) = 11
       expect(
         testActivity.calculateDuration(stats, difficultyCoefficient: 1.1),
         equals(11.0),
       );
 
-      // With coefficient 2.0: effectiveDiff = 5 * 2.0 = 10
-      // duration = 10 * (10/5) = 20
+      // With coefficient 2.0: effectiveDiff = 0.5 * 2.0 = 1.0
+      // duration = 10 * (1.0/0.5) = 20
       expect(
         testActivity.calculateDuration(stats, difficultyCoefficient: 2.0),
         equals(20.0),
@@ -69,7 +69,7 @@ void main() {
         name: 'Advanced',
         description: 'Requires high stats',
         baseDuration: 10.0,
-        difficulty: 10.0,
+        difficulty: 1.0,
         primaryStat: StatType.strength,
         rewards: {},
         requirements: {
@@ -125,7 +125,7 @@ void main() {
         name: 'Test',
         description: 'Test',
         baseDuration: 10.0,
-        difficulty: 5.0,
+        difficulty: 0.5,
         primaryStat: StatType.strength,
         rewards: {},
       );
