@@ -171,13 +171,7 @@ class _GameScreenState extends State<GameScreen>
     return Scaffold(
       appBar: AppBar(
         backgroundColor: Theme.of(context).colorScheme.inversePrimary,
-        title: Row(
-          children: [
-            const Text('Just Another Day'),
-            const SizedBox(width: 16),
-            GameTimeDisplay(gameTime: _activityManager.gameTime),
-          ],
-        ),
+        title: const Text('Just Another Day'),
         actions: [
           ThemeSelector(
             currentTheme: widget.themeProvider.currentTheme,
