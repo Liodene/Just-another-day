@@ -12,6 +12,7 @@ class ActivityListItem extends StatelessWidget {
     required this.isCurrentActivity,
     required this.canStart,
     required this.onStart,
+    this.onAddToPlan,
   });
 
   final Activity activity;
@@ -19,6 +20,9 @@ class ActivityListItem extends StatelessWidget {
   final bool isCurrentActivity;
   final bool canStart;
   final VoidCallback onStart;
+
+  /// Callback to add this activity to the plan. If null, no add button shown.
+  final VoidCallback? onAddToPlan;
 
   @override
   Widget build(BuildContext context) {
@@ -51,9 +55,20 @@ class ActivityListItem extends StatelessWidget {
             ),
           ],
         ),
-        trailing: ElevatedButton(
-          onPressed: meetsRequirements && canStart ? onStart : null,
-          child: Text(meetsRequirements ? 'Start' : 'Locked'),
+        trailing: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            if (onAddToPlan != null)
+              IconButton(
+                icon: const Icon(Icons.playlist_add),
+                tooltip: 'Add to plan',
+                onPressed: meetsRequirements ? onAddToPlan : null,
+              ),
+            ElevatedButton(
+              onPressed: meetsRequirements && canStart ? onStart : null,
+              child: Text(meetsRequirements ? 'Start' : 'Locked'),
+            ),
+          ],
         ),
         isThreeLine: true,
       ),

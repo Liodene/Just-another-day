@@ -13,6 +13,7 @@ class ActivitiesCard extends StatelessWidget {
     required this.currentActivityId,
     required this.hasActiveActivity,
     required this.onStartActivity,
+    this.onAddToPlan,
   });
 
   final List<Activity> activities;
@@ -20,6 +21,9 @@ class ActivitiesCard extends StatelessWidget {
   final String? currentActivityId;
   final bool hasActiveActivity;
   final void Function(Activity activity) onStartActivity;
+
+  /// Callback to add an activity to the plan. If null, no add button shown.
+  final void Function(Activity activity)? onAddToPlan;
 
   @override
   Widget build(BuildContext context) {
@@ -47,6 +51,8 @@ class ActivitiesCard extends StatelessWidget {
                   isCurrentActivity: currentActivityId == activity.id,
                   canStart: !hasActiveActivity,
                   onStart: () => onStartActivity(activity),
+                  onAddToPlan:
+                      onAddToPlan != null ? () => onAddToPlan!(activity) : null,
                 );
               },
             ),

@@ -285,4 +285,200 @@ void main() {
       expect(character.getSavedProgress('studying'), closeTo(0.3, 0.01));
     });
   });
+
+  group('ActivityManager activity plan', () {
+    late FakeTickerProvider tickerProvider;
+    late GameLoop gameLoop;
+    late Character character;
+    late ActivityManager activityManager;
+
+    setUp(() {
+      tickerProvider = FakeTickerProvider();
+      gameLoop = GameLoop(vsync: tickerProvider);
+      character = Character(name: 'TestPlayer');
+      activityManager = ActivityManager(
+        character: character,
+        gameLoop: gameLoop,
+      );
+      gameLoop.start();
+    });
+
+    tearDown(() {
+      activityManager.dispose();
+      gameLoop.dispose();
+    });
+
+    test('should start with empty plan', () {
+      expect(activityManager.activityPlan, isEmpty);
+      expect(activityManager.hasPlan, isFalse);
+    });
+
+    test('should add activity to plan', () {
+      activityManager.addToPlan(Activities.working);
+
+      expect(activityManager.activityPlan.length, equals(1));
+      expect(activityManager.activityPlan.first.id, equals('working'));
+      expect(activityManager.hasPlan, isTrue);
+    });
+
+    test('should auto-start first activity when added to empty plan', () {
+      activityManager.addToPlan(Activities.working);
+
+      expect(activityManager.hasActiveActivity, isTrue);
+      expect(activityManager.currentActivity!.id, equals('working'));
+    });
+
+    test('should not auto-start when activity already running', () {
+      activityManager.startActivity(Activities.studying, force: true);
+      activityManager.addToPlan(Activities.working);
+
+      // Current activity should still be studying
+      expect(activityManager.currentActivity!.id, equals('studying'));
+    });
+
+    test('should remove activity from plan by index', () {
+      activityManager.addToPlan(Activities.working);
+      activityManager.addToPlan(Activities.studying);
+
+      final removed = activityManager.removeFromPlan(1);
+
+      expect(removed!.id, equals('studying'));
+      expect(activityManager.activityPlan.length, equals(1));
+    });
+
+    test('should cancel current and save progress when removing index 0', () {
+      activityManager.addToPlan(Activities.working);
+
+      // Advance to 50% progress
+      tickerProvider.ticker!.advance(const Duration(milliseconds: 2500));
+      expect(activityManager.currentProgress!.progress, closeTo(0.5, 0.01));
+
+      // Remove from plan - should cancel and save
+      activityManager.removeFromPlan(0);
+
+      // Activity should be stopped
+      expect(activityManager.hasActiveActivity, isFalse);
+      // Progress should be saved
+      expect(character.getSavedProgress('working'), closeTo(0.5, 0.01));
+    });
+
+    test('should move to next activity when removing current from plan', () {
+      activityManager.addToPlan(Activities.working);
+      activityManager.addToPlan(Activities.studying);
+
+      // Advance to 50% progress on working
+      tickerProvider.ticker!.advance(const Duration(milliseconds: 2500));
+
+      // Remove current activity from plan
+      activityManager.removeFromPlan(0);
+
+      // Should now be doing studying
+      expect(activityManager.currentActivity!.id, equals('studying'));
+      // Working progress should be saved
+      expect(character.getSavedProgress('working'), closeTo(0.5, 0.01));
+    });
+
+    test('should move to next activity in plan when activity completes', () {
+      activityManager.addToPlan(Activities.working);
+      activityManager.addToPlan(Activities.studying);
+
+      // Working duration = 5 seconds, complete it
+      tickerProvider.ticker!.advance(const Duration(milliseconds: 5000));
+
+      // Should now be doing studying
+      expect(activityManager.currentActivity!.id, equals('studying'));
+      // Plan should only have studying now
+      expect(activityManager.activityPlan.length, equals(1));
+    });
+
+    test('should clear plan and stop activity', () {
+      activityManager.addToPlan(Activities.working);
+      activityManager.addToPlan(Activities.studying);
+
+      // Advance to 50% progress
+      tickerProvider.ticker!.advance(const Duration(milliseconds: 2500));
+
+      activityManager.clearPlan();
+
+      expect(activityManager.activityPlan, isEmpty);
+      expect(activityManager.hasActiveActivity, isFalse);
+      // Progress should be saved
+      expect(character.getSavedProgress('working'), closeTo(0.5, 0.01));
+    });
+
+    test('should reorder activities in plan', () {
+      activityManager.addToPlan(Activities.working);
+      activityManager.addToPlan(Activities.studying);
+      activityManager.addToPlan(Activities.exercising);
+
+      // Move studying to the end
+      activityManager.reorderPlan(1, 3);
+
+      expect(activityManager.activityPlan[0].id, equals('working'));
+      expect(activityManager.activityPlan[1].id, equals('exercising'));
+      expect(activityManager.activityPlan[2].id, equals('studying'));
+    });
+
+    test('should handle reordering current activity', () {
+      activityManager.addToPlan(Activities.working);
+      activityManager.addToPlan(Activities.studying);
+
+      // Get some progress on working
+      tickerProvider.ticker!.advance(const Duration(milliseconds: 2500));
+
+      // Move working to position 1 (after studying)
+      activityManager.reorderPlan(0, 2);
+
+      // Studying should now be running
+      expect(activityManager.currentActivity!.id, equals('studying'));
+      // Working progress should be saved
+      expect(character.getSavedProgress('working'), closeTo(0.5, 0.01));
+    });
+
+    test('should insert activity at specific position', () {
+      activityManager.addToPlan(Activities.working);
+      activityManager.addToPlan(Activities.studying);
+
+      activityManager.insertIntoPlan(1, Activities.exercising);
+
+      expect(activityManager.activityPlan[0].id, equals('working'));
+      expect(activityManager.activityPlan[1].id, equals('exercising'));
+      expect(activityManager.activityPlan[2].id, equals('studying'));
+    });
+
+    test('should remove activity by reference', () {
+      activityManager.addToPlan(Activities.working);
+      activityManager.addToPlan(Activities.studying);
+
+      final result = activityManager.removeActivityFromPlan(Activities.studying);
+
+      expect(result, isTrue);
+      expect(activityManager.activityPlan.length, equals(1));
+      expect(activityManager.activityPlan.first.id, equals('working'));
+    });
+
+    test('plan takes priority over auto-repeat', () {
+      activityManager.autoRepeat = true;
+      activityManager.addToPlan(Activities.working);
+      activityManager.addToPlan(Activities.studying);
+
+      // Complete working
+      tickerProvider.ticker!.advance(const Duration(milliseconds: 5000));
+
+      // Should move to studying from plan, not repeat working
+      expect(activityManager.currentActivity!.id, equals('studying'));
+    });
+
+    test('auto-repeat works when plan is empty', () {
+      activityManager.autoRepeat = true;
+      activityManager.startActivity(Activities.working, force: true);
+
+      // Complete working
+      tickerProvider.ticker!.advance(const Duration(milliseconds: 5000));
+
+      // Should repeat working since plan is empty
+      expect(activityManager.currentActivity!.id, equals('working'));
+      expect(activityManager.currentProgress!.progress, closeTo(0.0, 0.01));
+    });
+  });
 }

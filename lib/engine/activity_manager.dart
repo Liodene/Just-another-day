@@ -22,6 +22,7 @@ typedef ActivityProgressCallback = void Function(ActivityProgress? progress);
 /// - Applying stat rewards on completion
 /// - Auto-repeating activities
 /// - Tracking in-game time and real time played
+/// - Managing an activity plan (queue of activities to perform)
 class ActivityManager extends ChangeNotifier {
   /// Creates a new [ActivityManager].
   ActivityManager({
@@ -46,6 +47,9 @@ class ActivityManager extends ChangeNotifier {
   bool _autoRepeat = false;
   ActivityCompletedCallback? _onActivityCompleted;
   ActivityProgressCallback? _onProgressChanged;
+
+  /// The activity plan (queue of activities to perform in order).
+  final List<Activity> _activityPlan = [];
 
   /// The current activity progress, or null if no activity is running.
   ActivityProgress? get currentProgress => _currentProgress;
@@ -73,6 +77,143 @@ class ActivityManager extends ChangeNotifier {
   /// Sets a callback for when progress changes.
   set onProgressChanged(ActivityProgressCallback? callback) {
     _onProgressChanged = callback;
+  }
+
+  /// Gets a read-only view of the activity plan.
+  List<Activity> get activityPlan => List.unmodifiable(_activityPlan);
+
+  /// Whether the activity plan has any activities.
+  bool get hasPlan => _activityPlan.isNotEmpty;
+
+  /// Adds an activity to the end of the plan.
+  ///
+  /// If no activity is currently running and this is the first activity
+  /// in the plan, it will be started automatically.
+  void addToPlan(Activity activity) {
+    _activityPlan.add(activity);
+    notifyListeners();
+
+    // If nothing is running and this is the only activity, start it
+    if (!hasActiveActivity && _activityPlan.length == 1) {
+      _startNextFromPlan();
+    }
+  }
+
+  /// Inserts an activity at a specific position in the plan.
+  void insertIntoPlan(int index, Activity activity) {
+    final clampedIndex = index.clamp(0, _activityPlan.length);
+    _activityPlan.insert(clampedIndex, activity);
+    notifyListeners();
+
+    // If nothing is running and inserted at position 0, start it
+    if (!hasActiveActivity && clampedIndex == 0) {
+      _startNextFromPlan();
+    }
+  }
+
+  /// Removes an activity from the plan by index.
+  ///
+  /// If the removed activity is the current activity (index 0 and running),
+  /// the current activity will be cancelled, its progress saved, and the
+  /// next activity in the plan will be started.
+  ///
+  /// Returns the removed activity, or null if index is out of bounds.
+  Activity? removeFromPlan(int index) {
+    if (index < 0 || index >= _activityPlan.length) {
+      return null;
+    }
+
+    final removedActivity = _activityPlan[index];
+
+    // Check if we're removing the current activity
+    final isRemovingCurrentActivity = index == 0 &&
+        hasActiveActivity &&
+        currentActivity?.id == removedActivity.id;
+
+    if (isRemovingCurrentActivity) {
+      // Save progress and stop the current activity
+      stopActivity(saveProgress: true);
+    }
+
+    _activityPlan.removeAt(index);
+    notifyListeners();
+
+    // If we removed the current activity and there are more in the plan,
+    // start the next one
+    if (isRemovingCurrentActivity && _activityPlan.isNotEmpty) {
+      _startNextFromPlan();
+    }
+
+    return removedActivity;
+  }
+
+  /// Removes a specific activity from the plan.
+  ///
+  /// If the activity appears multiple times, only the first occurrence
+  /// is removed. If the removed activity is currently running, its progress
+  /// will be saved and the next activity will be started.
+  ///
+  /// Returns true if the activity was found and removed.
+  bool removeActivityFromPlan(Activity activity) {
+    final index = _activityPlan.indexWhere((a) => a.id == activity.id);
+    if (index == -1) {
+      return false;
+    }
+    removeFromPlan(index);
+    return true;
+  }
+
+  /// Clears all activities from the plan.
+  ///
+  /// If an activity is currently running, it will be stopped and its
+  /// progress saved.
+  void clearPlan() {
+    if (hasActiveActivity) {
+      stopActivity(saveProgress: true);
+    }
+    _activityPlan.clear();
+    notifyListeners();
+  }
+
+  /// Reorders an activity in the plan from one position to another.
+  void reorderPlan(int oldIndex, int newIndex) {
+    if (oldIndex < 0 || oldIndex >= _activityPlan.length) return;
+    if (newIndex < 0 || newIndex > _activityPlan.length) return;
+
+    // If moving the current activity (index 0) and it's running,
+    // we need to handle it specially
+    final isMovingCurrentActivity = oldIndex == 0 && hasActiveActivity;
+
+    if (newIndex > oldIndex) {
+      newIndex -= 1;
+    }
+
+    final activity = _activityPlan.removeAt(oldIndex);
+    _activityPlan.insert(newIndex, activity);
+
+    // If we moved the current activity away from position 0,
+    // save progress and start the new first activity
+    if (isMovingCurrentActivity && newIndex != 0 && _activityPlan.isNotEmpty) {
+      stopActivity(saveProgress: true);
+      _startNextFromPlan();
+    }
+
+    notifyListeners();
+  }
+
+  /// Starts the next activity from the plan.
+  void _startNextFromPlan() {
+    if (_activityPlan.isEmpty) return;
+
+    final nextActivity = _activityPlan.first;
+    if (nextActivity.meetsRequirements(character.stats)) {
+      startActivity(nextActivity, force: true);
+    } else {
+      // If requirements not met, remove and try next
+      _activityPlan.removeAt(0);
+      notifyListeners();
+      _startNextFromPlan();
+    }
   }
 
   /// Starts an activity.
@@ -211,9 +352,20 @@ class ActivityManager extends ChangeNotifier {
     // Notify listeners
     _onActivityCompleted?.call(activity, activity.rewards);
 
-    // Handle auto-repeat
-    if (_autoRepeat) {
-      // Restart the same activity with new difficulty coefficient
+    // Remove completed activity from plan (if it's at the front)
+    if (_activityPlan.isNotEmpty && _activityPlan.first.id == activity.id) {
+      _activityPlan.removeAt(0);
+    }
+
+    // Clear current progress first
+    _currentProgress = null;
+
+    // Determine next activity: plan takes priority, then auto-repeat
+    if (_activityPlan.isNotEmpty) {
+      // Start next activity from plan
+      _startNextFromPlan();
+    } else if (_autoRepeat) {
+      // No plan, but auto-repeat is enabled - restart same activity
       final duration = activity.calculateDuration(
         character.stats,
         difficultyCoefficient: character.getDifficultyCoefficient(activity.id),
@@ -222,8 +374,6 @@ class ActivityManager extends ChangeNotifier {
         activity: activity,
         totalDuration: duration,
       );
-    } else {
-      _currentProgress = null;
     }
 
     _onProgressChanged?.call(_currentProgress);
