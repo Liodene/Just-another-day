@@ -120,10 +120,10 @@ void main() {
       activityManager.startActivity(Activities.working, force: true);
 
       // Advance time to get 50% progress
-      // Working: baseDuration=10, difficulty=5, primary=endurance
-      // With endurance=1: duration = 10 * (5/1) = 50 seconds
-      // For 50% progress: need 25 seconds = 25000ms
-      tickerProvider.ticker!.advance(const Duration(milliseconds: 25000));
+      // Working: baseDuration=10, difficulty=0.5, primary=endurance
+      // With endurance=1: duration = 10 * (0.5/1) = 5 seconds
+      // For 50% progress: need 2.5 seconds = 2500ms
+      tickerProvider.ticker!.advance(const Duration(milliseconds: 2500));
 
       expect(activityManager.currentProgress!.progress, closeTo(0.5, 0.01));
 
@@ -139,8 +139,10 @@ void main() {
 
     test('should restore saved progress when returning to activity', () {
       // Start working and get some progress
+      // Working: baseDuration=10, difficulty=0.5, duration = 5 seconds
+      // For 50% progress: need 2.5 seconds = 2500ms
       activityManager.startActivity(Activities.working, force: true);
-      tickerProvider.ticker!.advance(const Duration(milliseconds: 25000));
+      tickerProvider.ticker!.advance(const Duration(milliseconds: 2500));
       expect(activityManager.currentProgress!.progress, closeTo(0.5, 0.01));
 
       // Switch to studying
@@ -181,8 +183,9 @@ void main() {
       // Start working activity
       activityManager.startActivity(Activities.working, force: true);
 
-      // Advance time to get 30% progress (15 seconds = 15000ms)
-      tickerProvider.ticker!.advance(const Duration(milliseconds: 15000));
+      // Advance time to get 30% progress
+      // Working: duration = 5 seconds, 30% = 1.5 seconds = 1500ms
+      tickerProvider.ticker!.advance(const Duration(milliseconds: 1500));
 
       expect(activityManager.currentProgress!.progress, closeTo(0.3, 0.01));
 
@@ -197,8 +200,8 @@ void main() {
       // Start working activity
       activityManager.startActivity(Activities.working, force: true);
 
-      // Advance time to get 30% progress
-      tickerProvider.ticker!.advance(const Duration(milliseconds: 15000));
+      // Advance time to get 30% progress (1.5 seconds = 1500ms)
+      tickerProvider.ticker!.advance(const Duration(milliseconds: 1500));
 
       // Stop activity with partial rewards (don't save progress)
       activityManager.stopActivity(grantPartialRewards: true);
@@ -211,8 +214,8 @@ void main() {
       // Start working activity
       activityManager.startActivity(Activities.working, force: true);
 
-      // Advance time to get 30% progress
-      tickerProvider.ticker!.advance(const Duration(milliseconds: 15000));
+      // Advance time to get 30% progress (1.5 seconds = 1500ms)
+      tickerProvider.ticker!.advance(const Duration(milliseconds: 1500));
 
       // Stop activity without saving progress
       activityManager.stopActivity(saveProgress: false);
@@ -225,8 +228,8 @@ void main() {
       // Start working activity
       activityManager.startActivity(Activities.working, force: true);
 
-      // Advance time to get 50% progress
-      tickerProvider.ticker!.advance(const Duration(milliseconds: 25000));
+      // Advance time to get 50% progress (2.5 seconds = 2500ms)
+      tickerProvider.ticker!.advance(const Duration(milliseconds: 2500));
 
       // Try to "switch" to the same activity with force
       // This should continue the activity, not save/reset
@@ -245,9 +248,9 @@ void main() {
     });
 
     test('partial progress should persist through save/restore', () {
-      // Start working and get progress
+      // Start working and get 50% progress (2.5 seconds = 2500ms)
       activityManager.startActivity(Activities.working, force: true);
-      tickerProvider.ticker!.advance(const Duration(milliseconds: 25000));
+      tickerProvider.ticker!.advance(const Duration(milliseconds: 2500));
 
       // Switch to studying to save working progress
       activityManager.startActivity(Activities.studying, force: true);
@@ -261,18 +264,18 @@ void main() {
     });
 
     test('multiple activities should track progress independently', () {
-      // Start working and get 50% progress
+      // Start working and get 50% progress (2.5 seconds = 2500ms)
       activityManager.startActivity(Activities.working, force: true);
-      tickerProvider.ticker!.advance(const Duration(milliseconds: 25000));
+      tickerProvider.ticker!.advance(const Duration(milliseconds: 2500));
 
       // Switch to studying
       activityManager.startActivity(Activities.studying, force: true);
 
       // Get 30% progress on studying
-      // Studying: baseDuration=15, difficulty=8, primary=intelligence
-      // With intelligence=1: duration = 15 * (8/1) = 120 seconds
-      // For 30% progress: need 36 seconds = 36000ms
-      tickerProvider.ticker!.advance(const Duration(milliseconds: 36000));
+      // Studying: baseDuration=15, difficulty=0.8, primary=intelligence
+      // With intelligence=1: duration = 15 * (0.8/1) = 12 seconds
+      // For 30% progress: need 3.6 seconds = 3600ms
+      tickerProvider.ticker!.advance(const Duration(milliseconds: 3600));
 
       // Switch to exercising
       activityManager.startActivity(Activities.exercising, force: true);
