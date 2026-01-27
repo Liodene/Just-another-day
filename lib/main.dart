@@ -173,6 +173,10 @@ class _GameScreenState extends State<GameScreen>
         backgroundColor: Theme.of(context).colorScheme.inversePrimary,
         title: const Text('Just Another Day'),
         actions: [
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 8),
+            child: GameTimeDisplay(gameTime: _activityManager.gameTime),
+          ),
           ThemeSelector(
             currentTheme: widget.themeProvider.currentTheme,
             onThemeChanged: widget.themeProvider.setTheme,
