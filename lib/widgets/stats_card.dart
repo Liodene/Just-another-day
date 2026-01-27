@@ -5,10 +5,7 @@ import 'stat_row.dart';
 
 /// Displays character name, total completions, and all stats.
 class StatsCard extends StatelessWidget {
-  const StatsCard({
-    super.key,
-    required this.character,
-  });
+  const StatsCard({super.key, required this.character});
 
   final Character character;
 

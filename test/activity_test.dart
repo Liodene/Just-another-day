@@ -14,10 +14,7 @@ void main() {
         baseDuration: 10.0,
         difficulty: 0.5,
         primaryStat: StatType.strength,
-        rewards: {
-          StatType.strength: 0.5,
-          StatType.endurance: 0.2,
-        },
+        rewards: {StatType.strength: 0.5, StatType.endurance: 0.2},
       );
     });
 
@@ -72,32 +69,20 @@ void main() {
         difficulty: 1.0,
         primaryStat: StatType.strength,
         rewards: {},
-        requirements: {
-          StatType.strength: 5.0,
-          StatType.intelligence: 3.0,
-        },
+        requirements: {StatType.strength: 5.0, StatType.intelligence: 3.0},
       );
 
       // Does not meet requirements
       final weakStats = CharacterStats(strength: 2.0, intelligence: 1.0);
-      expect(
-        activityWithRequirements.meetsRequirements(weakStats),
-        isFalse,
-      );
+      expect(activityWithRequirements.meetsRequirements(weakStats), isFalse);
 
       // Partially meets requirements
       final partialStats = CharacterStats(strength: 5.0, intelligence: 1.0);
-      expect(
-        activityWithRequirements.meetsRequirements(partialStats),
-        isFalse,
-      );
+      expect(activityWithRequirements.meetsRequirements(partialStats), isFalse);
 
       // Meets requirements
       final strongStats = CharacterStats(strength: 5.0, intelligence: 3.0);
-      expect(
-        activityWithRequirements.meetsRequirements(strongStats),
-        isTrue,
-      );
+      expect(activityWithRequirements.meetsRequirements(strongStats), isTrue);
 
       // Exceeds requirements
       final veryStrongStats = CharacterStats(

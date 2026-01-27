@@ -57,8 +57,9 @@ class ActivityPlannerCard extends StatelessWidget {
 
   Widget _buildEstimatedTime(BuildContext context) {
     final estimatedTime = activityManager.estimatePlanTime();
-    final timeText =
-        estimatedTime.isFinite ? _formatDuration(estimatedTime) : 'Unlimited';
+    final timeText = estimatedTime.isFinite
+        ? _formatDuration(estimatedTime)
+        : 'Unlimited';
 
     return Row(
       children: [
@@ -181,9 +182,7 @@ class _PlannedActivityItem extends StatelessWidget {
             Text(planned.targetDescription),
             if (planned.targetType != PlanTargetType.unlimited &&
                 planned.progress > 0)
-              LinearProgressIndicator(
-                value: planned.progress,
-              ),
+              LinearProgressIndicator(value: planned.progress),
           ],
         ),
         trailing: IconButton(
@@ -191,7 +190,8 @@ class _PlannedActivityItem extends StatelessWidget {
           onPressed: onRemove,
           color: Theme.of(context).colorScheme.error,
         ),
-        isThreeLine: planned.targetType != PlanTargetType.unlimited &&
+        isThreeLine:
+            planned.targetType != PlanTargetType.unlimited &&
             planned.progress > 0,
       ),
     );
@@ -282,13 +282,16 @@ class _AddPlannedActivityDialogState extends State<AddPlannedActivityDialog> {
           items: widget.activities
               .where((a) => a.meetsRequirements(widget.character.stats))
               .map((activity) {
-            final duration =
-                widget.activityManager.calculateActivityDuration(activity);
-            return DropdownMenuItem(
-              value: activity,
-              child: Text('${activity.name} (${duration.toStringAsFixed(1)}s)'),
-            );
-          }).toList(),
+                final duration = widget.activityManager
+                    .calculateActivityDuration(activity);
+                return DropdownMenuItem(
+                  value: activity,
+                  child: Text(
+                    '${activity.name} (${duration.toStringAsFixed(1)}s)',
+                  ),
+                );
+              })
+              .toList(),
           onChanged: (value) {
             setState(() {
               _selectedActivity = value;
@@ -359,10 +362,7 @@ class _AddPlannedActivityDialogState extends State<AddPlannedActivityDialog> {
       ),
       child: Row(
         children: [
-          Icon(
-            Icons.warning_amber,
-            color: Theme.of(context).colorScheme.error,
-          ),
+          Icon(Icons.warning_amber, color: Theme.of(context).colorScheme.error),
           const SizedBox(width: 8),
           Expanded(
             child: Text(
@@ -429,10 +429,7 @@ class CancelPlanDialog extends StatelessWidget {
 
 /// Confirmation dialog when selecting a new activity while plan is active.
 class SwitchActivityDialog extends StatelessWidget {
-  const SwitchActivityDialog({
-    super.key,
-    required this.newActivity,
-  });
+  const SwitchActivityDialog({super.key, required this.newActivity});
 
   final Activity newActivity;
 

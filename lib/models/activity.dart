@@ -133,10 +133,7 @@ class Activities {
     baseDuration: 10.0,
     difficulty: 0.5,
     primaryStat: StatType.endurance,
-    rewards: {
-      StatType.endurance: 0.1,
-      StatType.charisma: 0.05,
-    },
+    rewards: {StatType.endurance: 0.1, StatType.charisma: 0.05},
   );
 
   static const studying = Activity(
@@ -146,9 +143,7 @@ class Activities {
     baseDuration: 15.0,
     difficulty: 0.8,
     primaryStat: StatType.intelligence,
-    rewards: {
-      StatType.intelligence: 0.15,
-    },
+    rewards: {StatType.intelligence: 0.15},
   );
 
   static const exercising = Activity(
@@ -172,13 +167,8 @@ class Activities {
     baseDuration: 12.0,
     difficulty: 1.0,
     primaryStat: StatType.agility,
-    requirements: {
-      StatType.strength: 3.0,
-    },
-    rewards: {
-      StatType.strength: 0.1,
-      StatType.agility: 0.15,
-    },
+    requirements: {StatType.strength: 3.0},
+    rewards: {StatType.strength: 0.1, StatType.agility: 0.15},
   );
 
   static const socializing = Activity(
@@ -188,9 +178,7 @@ class Activities {
     baseDuration: 5.0,
     difficulty: 0.3,
     primaryStat: StatType.charisma,
-    rewards: {
-      StatType.charisma: 0.1,
-    },
+    rewards: {StatType.charisma: 0.1},
   );
 
   /// All available activities.

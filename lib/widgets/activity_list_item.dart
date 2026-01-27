@@ -61,9 +61,11 @@ class ActivityListItem extends StatelessWidget {
   }
 
   String _formatRewards(Map<StatType, double> rewards) {
-    return rewards.entries.map((e) {
-      final statName = e.key.name.substring(0, 3).toUpperCase();
-      return '+${e.value.toStringAsFixed(2)} $statName';
-    }).join(', ');
+    return rewards.entries
+        .map((e) {
+          final statName = e.key.name.substring(0, 3).toUpperCase();
+          return '+${e.value.toStringAsFixed(2)} $statName';
+        })
+        .join(', ');
   }
 }

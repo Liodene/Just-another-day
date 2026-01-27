@@ -82,9 +82,7 @@ class GameSaveData {
 /// - Local storage persistence using shared_preferences
 class SaveManager extends ChangeNotifier {
   /// Creates a new [SaveManager].
-  SaveManager({
-    this.autosaveIntervalSeconds = 30,
-  });
+  SaveManager({this.autosaveIntervalSeconds = 30});
 
   /// The storage key for the save data.
   static const String _saveKey = 'just_another_day_save';
@@ -105,10 +103,7 @@ class SaveManager extends ChangeNotifier {
   DateTime? get lastSaveTime => _lastSaveTime;
 
   /// Initializes the save manager with the game state references.
-  void initialize({
-    required Character character,
-    required GameTime gameTime,
-  }) {
+  void initialize({required Character character, required GameTime gameTime}) {
     _character = character;
     _gameTime = gameTime;
   }

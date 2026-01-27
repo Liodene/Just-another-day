@@ -54,10 +54,7 @@ class _MyAppState extends State<MyApp> {
 
 /// Main game screen that demonstrates the game loop and activity system.
 class GameScreen extends StatefulWidget {
-  const GameScreen({
-    super.key,
-    required this.themeProvider,
-  });
+  const GameScreen({super.key, required this.themeProvider});
 
   /// The theme provider for managing app theme.
   final ThemeProvider themeProvider;
@@ -164,9 +161,7 @@ class _GameScreenState extends State<GameScreen>
           backgroundColor: Theme.of(context).colorScheme.inversePrimary,
           title: const Text('Just Another Day'),
         ),
-        body: const Center(
-          child: CircularProgressIndicator(),
-        ),
+        body: const Center(child: CircularProgressIndicator()),
       );
     }
 
@@ -191,9 +186,7 @@ class _GameScreenState extends State<GameScreen>
           builder: (context, constraints) {
             return SingleChildScrollView(
               child: ConstrainedBox(
-                constraints: BoxConstraints(
-                  minHeight: constraints.maxHeight,
-                ),
+                constraints: BoxConstraints(minHeight: constraints.maxHeight),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [

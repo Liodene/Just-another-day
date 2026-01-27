@@ -58,10 +58,7 @@ class ResponsiveAppBarActions extends StatelessWidget {
             onThemeChanged: themeProvider.setTheme,
             onToggleDarkMode: themeProvider.toggleDarkMode,
           ),
-          SaveMenuButton(
-            saveManager: saveManager,
-            onImport: onImport,
-          ),
+          SaveMenuButton(saveManager: saveManager, onImport: onImport),
           IconButton(
             icon: Icon(isPaused ? Icons.play_arrow : Icons.pause),
             onPressed: onTogglePause,
@@ -101,9 +98,7 @@ class ResponsiveAppBarActions extends StatelessWidget {
                         : Icons.dark_mode,
                   ),
                   const SizedBox(width: 12),
-                  Text(
-                    themeProvider.isDarkTheme ? 'Light mode' : 'Dark mode',
-                  ),
+                  Text(themeProvider.isDarkTheme ? 'Light mode' : 'Dark mode'),
                 ],
               ),
             ),
@@ -162,9 +157,9 @@ class ResponsiveAppBarActions extends StatelessWidget {
         _showThemeDialog(context);
       case 'save':
         saveManager.save();
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Game saved')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(const SnackBar(content: Text('Game saved')));
       case 'export':
         _exportSave(context);
       case 'import':
@@ -192,7 +187,9 @@ class ResponsiveAppBarActions extends StatelessWidget {
                   ),
                 ),
               ),
-              ...AppThemeType.values.where((t) => !t.isDark).map(
+              ...AppThemeType.values
+                  .where((t) => !t.isDark)
+                  .map(
                     (theme) => ListTile(
                       leading: Icon(theme.icon),
                       title: Text(theme.displayName),
@@ -216,7 +213,9 @@ class ResponsiveAppBarActions extends StatelessWidget {
                   ),
                 ),
               ),
-              ...AppThemeType.values.where((t) => t.isDark).map(
+              ...AppThemeType.values
+                  .where((t) => t.isDark)
+                  .map(
                     (theme) => ListTile(
                       leading: Icon(theme.icon),
                       title: Text(theme.displayName),

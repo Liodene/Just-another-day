@@ -42,10 +42,7 @@ void main() {
     });
 
     test('getStat should return correct values', () {
-      final stats = CharacterStats(
-        strength: 5.0,
-        intelligence: 10.0,
-      );
+      final stats = CharacterStats(strength: 5.0, intelligence: 10.0);
 
       expect(stats.getStat(StatType.strength), equals(5.0));
       expect(stats.getStat(StatType.intelligence), equals(10.0));
@@ -171,10 +168,7 @@ void main() {
         closeTo(1.10, 0.001),
       );
       // Exercising: 0 completions = 1.0x
-      expect(
-        character.getDifficultyCoefficient('exercising'),
-        equals(1.0),
-      );
+      expect(character.getDifficultyCoefficient('exercising'), equals(1.0));
     });
   });
 

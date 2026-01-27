@@ -52,7 +52,9 @@ class ThemeSelector extends StatelessWidget {
                 ),
               ),
             ),
-            ...AppThemeType.values.where((t) => !t.isDark).map(
+            ...AppThemeType.values
+                .where((t) => !t.isDark)
+                .map(
                   (theme) => PopupMenuItem<AppThemeType>(
                     value: theme,
                     child: _ThemeMenuItem(
@@ -72,7 +74,9 @@ class ThemeSelector extends StatelessWidget {
                 ),
               ),
             ),
-            ...AppThemeType.values.where((t) => t.isDark).map(
+            ...AppThemeType.values
+                .where((t) => t.isDark)
+                .map(
                   (theme) => PopupMenuItem<AppThemeType>(
                     value: theme,
                     child: _ThemeMenuItem(
@@ -89,10 +93,7 @@ class ThemeSelector extends StatelessWidget {
 }
 
 class _ThemeMenuItem extends StatelessWidget {
-  const _ThemeMenuItem({
-    required this.theme,
-    required this.isSelected,
-  });
+  const _ThemeMenuItem({required this.theme, required this.isSelected});
 
   final AppThemeType theme;
   final bool isSelected;
