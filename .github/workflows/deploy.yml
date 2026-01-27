@@ -34,6 +34,12 @@ jobs:
       - name: Get dependencies
         run: flutter pub get
 
+      - name: Check code formatting
+        run: |
+          echo "Checking code formatting..."
+          dart format --set-exit-if-changed --line-length 80 lib test
+          echo "✅ Code formatting is correct"
+
       - name: Analyze code
         run: flutter analyze
 
