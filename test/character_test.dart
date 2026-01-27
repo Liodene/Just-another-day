@@ -123,7 +123,10 @@ void main() {
       final character = Character(name: 'Test');
       character.addCompletion('working');
 
-      expect(character.getDifficultyCoefficient('working'), closeTo(1.10, 0.001));
+      expect(
+        character.getDifficultyCoefficient('working'),
+        closeTo(1.10, 0.001),
+      );
     });
 
     test('getDifficultyCoefficient should be 1.21 with 2 completions', () {
@@ -131,7 +134,10 @@ void main() {
       character.addCompletion('working');
       character.addCompletion('working');
 
-      expect(character.getDifficultyCoefficient('working'), closeTo(1.21, 0.001));
+      expect(
+        character.getDifficultyCoefficient('working'),
+        closeTo(1.21, 0.001),
+      );
     });
 
     test('getDifficultyCoefficient should scale exponentially', () {
@@ -141,7 +147,10 @@ void main() {
       );
 
       // 1.10^10 = 2.5937424601
-      expect(character.getDifficultyCoefficient('working'), closeTo(2.594, 0.001));
+      expect(
+        character.getDifficultyCoefficient('working'),
+        closeTo(2.594, 0.001),
+      );
     });
 
     test('difficulty coefficients are independent per activity', () {
@@ -152,14 +161,20 @@ void main() {
       character.addCompletion('studying');
 
       // Working: 2 completions = 1.21x
-      expect(character.getDifficultyCoefficient('working'), closeTo(1.21, 0.001));
+      expect(
+        character.getDifficultyCoefficient('working'),
+        closeTo(1.21, 0.001),
+      );
       // Studying: 1 completion = 1.10x
       expect(
         character.getDifficultyCoefficient('studying'),
         closeTo(1.10, 0.001),
       );
       // Exercising: 0 completions = 1.0x
-      expect(character.getDifficultyCoefficient('exercising'), equals(1.0));
+      expect(
+        character.getDifficultyCoefficient('exercising'),
+        equals(1.0),
+      );
     });
   });
 }
