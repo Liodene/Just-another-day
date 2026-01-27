@@ -41,3 +41,9 @@ jobs:
           echo "🔍 Running static analysis with 181 linting rules..."
           flutter analyze
           echo "✅ Static analysis passed"
+
+      - name: Run tests
+        run: |
+          echo "🧪 Running tests..."
+          flutter test
+          echo "✅ All tests passed"
