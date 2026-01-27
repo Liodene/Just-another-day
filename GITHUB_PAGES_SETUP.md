@@ -16,6 +16,7 @@ To enable deployment to GitHub Pages, the repository owner needs to complete the
 
 Once GitHub Pages is enabled:
 - The workflow will automatically deploy when changes are pushed to the `main` or `copilot/create-flutter-app-workflow` branch
+- The workflow will also trigger on pull requests targeting the `main` branch, allowing PR preview deployments
 - The app will be available at: https://liodene.github.io/Just-another-day/
 
 ## Workflow Details
