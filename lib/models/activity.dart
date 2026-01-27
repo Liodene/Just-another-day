@@ -97,7 +97,8 @@ class ActivityProgress {
   bool get isComplete => elapsedTime >= totalDuration;
 
   /// Remaining time in seconds.
-  double get remainingTime => (totalDuration - elapsedTime).clamp(0.0, totalDuration);
+  double get remainingTime =>
+      (totalDuration - elapsedTime).clamp(0.0, totalDuration);
 
   /// Updates the progress by adding delta time.
   ///
@@ -121,7 +122,8 @@ class Activities {
   static const working = Activity(
     id: 'working',
     name: 'Working',
-    description: 'Work a job to earn experience and improve your endurance.',
+    description:
+        'Work a job to earn experience and improve your endurance.',
     baseDuration: 10.0,
     difficulty: 5.0,
     primaryStat: StatType.endurance,

@@ -59,19 +59,34 @@ void main() {
 
       // Does not meet requirements
       final weakStats = CharacterStats(strength: 2.0, intelligence: 1.0);
-      expect(activityWithRequirements.meetsRequirements(weakStats), isFalse);
+      expect(
+        activityWithRequirements.meetsRequirements(weakStats),
+        isFalse,
+      );
 
       // Partially meets requirements
       final partialStats = CharacterStats(strength: 5.0, intelligence: 1.0);
-      expect(activityWithRequirements.meetsRequirements(partialStats), isFalse);
+      expect(
+        activityWithRequirements.meetsRequirements(partialStats),
+        isFalse,
+      );
 
       // Meets requirements
       final strongStats = CharacterStats(strength: 5.0, intelligence: 3.0);
-      expect(activityWithRequirements.meetsRequirements(strongStats), isTrue);
+      expect(
+        activityWithRequirements.meetsRequirements(strongStats),
+        isTrue,
+      );
 
       // Exceeds requirements
-      final veryStrongStats = CharacterStats(strength: 10.0, intelligence: 10.0);
-      expect(activityWithRequirements.meetsRequirements(veryStrongStats), isTrue);
+      final veryStrongStats = CharacterStats(
+        strength: 10.0,
+        intelligence: 10.0,
+      );
+      expect(
+        activityWithRequirements.meetsRequirements(veryStrongStats),
+        isTrue,
+      );
     });
 
     test('meetsRequirements should return true when no requirements', () {

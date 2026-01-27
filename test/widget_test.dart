@@ -3,7 +3,8 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:just_another_day/main.dart';
 
 void main() {
-  testWidgets('GameScreen displays character stats', (WidgetTester tester) async {
+  testWidgets('GameScreen displays character stats',
+      (WidgetTester tester) async {
     await tester.pumpWidget(const MyApp());
 
     // Should display the app title
@@ -24,7 +25,8 @@ void main() {
     expect(find.text('Current Activity'), findsOneWidget);
   });
 
-  testWidgets('GameScreen displays available activities', (WidgetTester tester) async {
+  testWidgets('GameScreen displays available activities',
+      (WidgetTester tester) async {
     await tester.pumpWidget(const MyApp());
 
     // Should display pre-defined activities
@@ -34,11 +36,15 @@ void main() {
     expect(find.text('Socializing'), findsOneWidget);
   });
 
-  testWidgets('GameScreen can start an activity', (WidgetTester tester) async {
+  testWidgets('GameScreen can start an activity',
+      (WidgetTester tester) async {
     await tester.pumpWidget(const MyApp());
 
     // Initially no activity
-    expect(find.text('No activity in progress. Select an activity below.'), findsOneWidget);
+    expect(
+      find.text('No activity in progress. Select an activity below.'),
+      findsOneWidget,
+    );
 
     // Find and tap the first Start button (Working activity)
     final startButtons = find.widgetWithText(ElevatedButton, 'Start');
@@ -46,11 +52,15 @@ void main() {
     await tester.pump();
 
     // Should now show activity progress
-    expect(find.text('No activity in progress. Select an activity below.'), findsNothing);
+    expect(
+      find.text('No activity in progress. Select an activity below.'),
+      findsNothing,
+    );
     expect(find.text('Stop Activity'), findsOneWidget);
   });
 
-  testWidgets('GameScreen can stop an activity', (WidgetTester tester) async {
+  testWidgets('GameScreen can stop an activity',
+      (WidgetTester tester) async {
     await tester.pumpWidget(const MyApp());
 
     // Start an activity
@@ -63,10 +73,14 @@ void main() {
     await tester.pump();
 
     // Should show no activity message again
-    expect(find.text('No activity in progress. Select an activity below.'), findsOneWidget);
+    expect(
+      find.text('No activity in progress. Select an activity below.'),
+      findsOneWidget,
+    );
   });
 
-  testWidgets('GameScreen has pause/resume button', (WidgetTester tester) async {
+  testWidgets('GameScreen has pause/resume button',
+      (WidgetTester tester) async {
     await tester.pumpWidget(const MyApp());
 
     // Should find pause button in app bar
@@ -81,7 +95,8 @@ void main() {
     expect(find.byIcon(Icons.play_arrow), findsOneWidget);
   });
 
-  testWidgets('GameScreen has auto-repeat toggle', (WidgetTester tester) async {
+  testWidgets('GameScreen has auto-repeat toggle',
+      (WidgetTester tester) async {
     await tester.pumpWidget(const MyApp());
 
     expect(find.text('Auto-repeat'), findsOneWidget);
