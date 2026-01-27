@@ -417,4 +417,168 @@ void main() {
       expect(estimate, equals(0));
     });
   });
+
+  group('ActivityManager removePlannedActivity', () {
+    late FakeTickerProvider tickerProvider;
+    late GameLoop gameLoop;
+    late Character character;
+    late ActivityManager activityManager;
+
+    setUp(() {
+      tickerProvider = FakeTickerProvider();
+      gameLoop = GameLoop(vsync: tickerProvider);
+      character = Character(name: 'TestPlayer');
+      activityManager = ActivityManager(
+        character: character,
+        gameLoop: gameLoop,
+      );
+      gameLoop.start();
+    });
+
+    tearDown(() {
+      activityManager.dispose();
+      gameLoop.dispose();
+    });
+
+    test('should remove non-current activity without affecting current', () {
+      // Add two activities to plan
+      activityManager.planner.addPlannedActivity(
+        PlannedActivity(
+          activity: Activities.working,
+          targetType: PlanTargetType.completions,
+          targetValue: 2,
+        ),
+      );
+      activityManager.planner.addPlannedActivity(
+        PlannedActivity(
+          activity: Activities.studying,
+          targetType: PlanTargetType.completions,
+          targetValue: 1,
+        ),
+      );
+
+      // Start the plan
+      activityManager.startPlan();
+      expect(activityManager.currentActivity?.id, equals('working'));
+      expect(activityManager.planner.queue.length, equals(2));
+
+      // Remove the second (non-current) activity
+      final removed = activityManager.removePlannedActivity(1);
+
+      expect(removed?.activity.id, equals('studying'));
+      expect(activityManager.planner.queue.length, equals(1));
+      // Current activity should still be running
+      expect(activityManager.currentActivity?.id, equals('working'));
+      expect(activityManager.hasActiveActivity, isTrue);
+    });
+
+    test('should stop current activity and move to next when removing first',
+        () {
+      // Add two activities to plan
+      activityManager.planner.addPlannedActivity(
+        PlannedActivity(
+          activity: Activities.working,
+          targetType: PlanTargetType.completions,
+          targetValue: 2,
+        ),
+      );
+      activityManager.planner.addPlannedActivity(
+        PlannedActivity(
+          activity: Activities.studying,
+          targetType: PlanTargetType.completions,
+          targetValue: 1,
+        ),
+      );
+
+      // Start the plan
+      activityManager.startPlan();
+      expect(activityManager.currentActivity?.id, equals('working'));
+
+      // Get some progress on working
+      tickerProvider.ticker!.advance(const Duration(milliseconds: 2000));
+      expect(activityManager.currentProgress!.progress, greaterThan(0));
+
+      // Remove the current (first) activity
+      final removed = activityManager.removePlannedActivity(0);
+
+      expect(removed?.activity.id, equals('working'));
+      expect(activityManager.planner.queue.length, equals(1));
+      // Should have moved to studying
+      expect(activityManager.currentActivity?.id, equals('studying'));
+      expect(activityManager.hasActiveActivity, isTrue);
+      // Progress should be saved for working
+      expect(character.getSavedProgress('working'), greaterThan(0));
+    });
+
+    test('should stop activity when removing only planned activity', () {
+      // Add one activity to plan
+      activityManager.planner.addPlannedActivity(
+        PlannedActivity(
+          activity: Activities.working,
+          targetType: PlanTargetType.completions,
+          targetValue: 2,
+        ),
+      );
+
+      // Start the plan
+      activityManager.startPlan();
+      expect(activityManager.currentActivity?.id, equals('working'));
+
+      // Get some progress
+      tickerProvider.ticker!.advance(const Duration(milliseconds: 2000));
+
+      // Remove the only activity
+      final removed = activityManager.removePlannedActivity(0);
+
+      expect(removed?.activity.id, equals('working'));
+      expect(activityManager.planner.queue.length, equals(0));
+      // Should have stopped - no more activities
+      expect(activityManager.hasActiveActivity, isFalse);
+      // Progress should be saved
+      expect(character.getSavedProgress('working'), greaterThan(0));
+    });
+
+    test('should return null for invalid index', () {
+      activityManager.planner.addPlannedActivity(
+        PlannedActivity(
+          activity: Activities.working,
+          targetType: PlanTargetType.completions,
+          targetValue: 1,
+        ),
+      );
+
+      expect(activityManager.removePlannedActivity(-1), isNull);
+      expect(activityManager.removePlannedActivity(5), isNull);
+      expect(activityManager.planner.queue.length, equals(1));
+    });
+
+    test('should not affect activity if plan not started', () {
+      // Add activities but don't start the plan
+      activityManager.planner.addPlannedActivity(
+        PlannedActivity(
+          activity: Activities.working,
+          targetType: PlanTargetType.completions,
+          targetValue: 2,
+        ),
+      );
+      activityManager.planner.addPlannedActivity(
+        PlannedActivity(
+          activity: Activities.studying,
+          targetType: PlanTargetType.completions,
+          targetValue: 1,
+        ),
+      );
+
+      expect(activityManager.hasActiveActivity, isFalse);
+
+      // Remove first activity
+      final removed = activityManager.removePlannedActivity(0);
+
+      expect(removed?.activity.id, equals('working'));
+      expect(activityManager.planner.queue.length, equals(1));
+      expect(activityManager.planner.currentPlanned?.activity.id, 'studying');
+      // Still no active activity
+      expect(activityManager.hasActiveActivity, isFalse);
+    });
+  });
 }

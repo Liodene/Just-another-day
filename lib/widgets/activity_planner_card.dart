@@ -99,7 +99,7 @@ class ActivityPlannerCard extends StatelessWidget {
           key: ValueKey('${planned.activity.id}_$index'),
           planned: planned,
           isActive: isFirst && activityManager.hasActiveActivity,
-          onRemove: () => planner.removeAt(index),
+          onRemove: () => activityManager.removePlannedActivity(index),
         );
       },
     );

@@ -315,6 +315,39 @@ class ActivityManager extends ChangeNotifier {
     stopActivity(saveProgress: true);
   }
 
+  /// Removes a planned activity at the given index.
+  ///
+  /// If removing the current (first) activity while it's running:
+  /// - Stops the current activity and saves progress
+  /// - Starts the next planned activity (if any)
+  ///
+  /// Returns the removed activity, or null if index is invalid.
+  PlannedActivity? removePlannedActivity(int index) {
+    if (index < 0 || index >= _planner.queue.length) return null;
+
+    final isRemovingCurrent = index == 0;
+    final wasRunning = hasActiveActivity &&
+        isRemovingCurrent &&
+        currentActivity?.id == _planner.currentPlanned?.activity.id;
+
+    // Remove from planner
+    final removed = _planner.removeAt(index);
+
+    // If we removed the currently running activity, handle the transition
+    if (wasRunning && removed != null) {
+      // Stop current activity and save progress
+      stopActivity(saveProgress: true);
+
+      // Start next planned activity if there is one
+      final next = _planner.currentPlanned;
+      if (next != null) {
+        startActivity(next.activity, force: true);
+      }
+    }
+
+    return removed;
+  }
+
   /// Calculates the duration for an activity based on current character stats.
   double calculateActivityDuration(Activity activity) {
     return activity.calculateDuration(
