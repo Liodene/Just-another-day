@@ -13,6 +13,7 @@ const String _themePreferenceKey = 'app_theme';
 /// - Saving theme preference when changed
 /// - Notifying listeners when theme changes
 class ThemeProvider extends ChangeNotifier {
+  /// Creates a new [ThemeProvider] and loads saved preferences.
   ThemeProvider() {
     _loadThemePreference();
   }
@@ -42,39 +43,30 @@ class ThemeProvider extends ChangeNotifier {
     await _saveThemePreference();
   }
 
-  /// Toggle between light and dark mode, preserving color preference
-  /// when possible.
+  /// Toggle between light and dark mode.
+  ///
+  /// Preserves color preference when possible.
   Future<void> toggleDarkMode() async {
     final AppThemeType newTheme;
 
     if (_currentTheme.isDark) {
       // Switch to light version
-      switch (_currentTheme) {
-        case AppThemeType.darkPurple:
-          newTheme = AppThemeType.lightPurple;
-        case AppThemeType.darkBlue:
-          newTheme = AppThemeType.lightBlue;
-        case AppThemeType.darkTeal:
-          newTheme = AppThemeType.lightGreen;
-        case AppThemeType.darkHighContrast:
-          newTheme = AppThemeType.lightPurple;
-        default:
-          newTheme = AppThemeType.lightPurple;
-      }
+      newTheme = switch (_currentTheme) {
+        AppThemeType.darkPurple => AppThemeType.lightPurple,
+        AppThemeType.darkBlue => AppThemeType.lightBlue,
+        AppThemeType.darkTeal => AppThemeType.lightGreen,
+        AppThemeType.darkHighContrast => AppThemeType.lightPurple,
+        _ => AppThemeType.lightPurple,
+      };
     } else {
       // Switch to dark version
-      switch (_currentTheme) {
-        case AppThemeType.lightPurple:
-          newTheme = AppThemeType.darkPurple;
-        case AppThemeType.lightBlue:
-          newTheme = AppThemeType.darkBlue;
-        case AppThemeType.lightGreen:
-          newTheme = AppThemeType.darkTeal;
-        case AppThemeType.lightOrange:
-          newTheme = AppThemeType.darkPurple;
-        default:
-          newTheme = AppThemeType.darkPurple;
-      }
+      newTheme = switch (_currentTheme) {
+        AppThemeType.lightPurple => AppThemeType.darkPurple,
+        AppThemeType.lightBlue => AppThemeType.darkBlue,
+        AppThemeType.lightGreen => AppThemeType.darkTeal,
+        AppThemeType.lightOrange => AppThemeType.darkPurple,
+        _ => AppThemeType.darkPurple,
+      };
     }
 
     await setTheme(newTheme);
