@@ -148,12 +148,15 @@ class ActivityManager extends ChangeNotifier {
     // Apply full rewards
     _applyRewards(activity, 1.0);
 
+    // Increment completed activities count (increases difficulty by 1.10x)
+    character.completedActivities++;
+
     // Notify listeners
     _onActivityCompleted?.call(activity, activity.rewards);
 
     // Handle auto-repeat
     if (_autoRepeat) {
-      // Restart the same activity
+      // Restart the same activity with new difficulty coefficient
       final duration = activity.calculateDuration(
         character.stats,
         difficultyCoefficient: character.difficultyCoefficient,

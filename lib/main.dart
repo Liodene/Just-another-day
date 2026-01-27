@@ -134,31 +134,21 @@ class _GameScreenState extends State<GameScreen>
                   _character.name,
                   style: Theme.of(context).textTheme.titleLarge,
                 ),
-                Row(
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.end,
                   children: [
-                    IconButton(
-                      icon: const Icon(Icons.remove),
-                      onPressed: _character.level > 1
-                          ? () => setState(() => _character.level--)
-                          : null,
-                      iconSize: 20,
+                    Text(
+                      'Completions: ${_character.completedActivities}',
+                      style: Theme.of(context).textTheme.bodyMedium,
                     ),
                     Text(
-                      'Lv.${_character.level}',
-                      style: Theme.of(context).textTheme.titleMedium,
-                    ),
-                    IconButton(
-                      icon: const Icon(Icons.add),
-                      onPressed: () => setState(() => _character.level++),
-                      iconSize: 20,
+                      'Difficulty: '
+                      '${_character.difficultyCoefficient.toStringAsFixed(2)}x',
+                      style: Theme.of(context).textTheme.bodySmall,
                     ),
                   ],
                 ),
               ],
-            ),
-            Text(
-              'Difficulty: ${_character.difficultyCoefficient.toStringAsFixed(2)}x',
-              style: Theme.of(context).textTheme.bodySmall,
             ),
             const SizedBox(height: 12),
             _buildStatRow('Strength', stats.strength, Colors.red),

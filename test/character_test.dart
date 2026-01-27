@@ -88,7 +88,7 @@ void main() {
 
       expect(character.name, equals('Test'));
       expect(character.stats.strength, equals(1.0));
-      expect(character.level, equals(1));
+      expect(character.completedActivities, equals(0));
     });
 
     test('should create with custom stats', () {
@@ -98,35 +98,47 @@ void main() {
       expect(character.stats.strength, equals(10.0));
     });
 
-    test('should create with custom level', () {
-      final character = Character(name: 'Test', level: 5);
+    test('should create with custom completed activities', () {
+      final character = Character(name: 'Test', completedActivities: 5);
 
-      expect(character.level, equals(5));
+      expect(character.completedActivities, equals(5));
     });
 
-    test('difficultyCoefficient should be 1.0 at level 1', () {
-      final character = Character(name: 'Test', level: 1);
+    test('difficultyCoefficient should be 1.0 with 0 completions', () {
+      final character = Character(name: 'Test', completedActivities: 0);
 
       expect(character.difficultyCoefficient, equals(1.0));
     });
 
-    test('difficultyCoefficient should be 1.10 at level 2', () {
-      final character = Character(name: 'Test', level: 2);
+    test('difficultyCoefficient should be 1.10 with 1 completion', () {
+      final character = Character(name: 'Test', completedActivities: 1);
 
       expect(character.difficultyCoefficient, closeTo(1.10, 0.001));
     });
 
-    test('difficultyCoefficient should be 1.21 at level 3', () {
-      final character = Character(name: 'Test', level: 3);
+    test('difficultyCoefficient should be 1.21 with 2 completions', () {
+      final character = Character(name: 'Test', completedActivities: 2);
 
       expect(character.difficultyCoefficient, closeTo(1.21, 0.001));
     });
 
     test('difficultyCoefficient should scale exponentially', () {
-      final character = Character(name: 'Test', level: 10);
+      final character = Character(name: 'Test', completedActivities: 10);
 
-      // 1.10^9 = 2.357947691
-      expect(character.difficultyCoefficient, closeTo(2.357, 0.001));
+      // 1.10^10 = 2.5937424601
+      expect(character.difficultyCoefficient, closeTo(2.594, 0.001));
+    });
+
+    test('completedActivities should be incrementable', () {
+      final character = Character(name: 'Test');
+
+      expect(character.difficultyCoefficient, equals(1.0));
+
+      character.completedActivities++;
+      expect(character.difficultyCoefficient, closeTo(1.10, 0.001));
+
+      character.completedActivities++;
+      expect(character.difficultyCoefficient, closeTo(1.21, 0.001));
     });
   });
 }
