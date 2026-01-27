@@ -143,8 +143,10 @@ class ActivityManager extends ChangeNotifier {
   /// based on progress.
   /// If [saveProgress] is true (default), saves the partial progress so it
   /// can be resumed later.
-  void stopActivity(
-      {bool grantPartialRewards = false, bool saveProgress = true}) {
+  void stopActivity({
+    bool grantPartialRewards = false,
+    bool saveProgress = true,
+  }) {
     if (_currentProgress == null) return;
 
     if (grantPartialRewards && _currentProgress!.progress > 0) {
