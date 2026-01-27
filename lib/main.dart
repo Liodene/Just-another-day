@@ -134,19 +134,9 @@ class _GameScreenState extends State<GameScreen>
                   _character.name,
                   style: Theme.of(context).textTheme.titleLarge,
                 ),
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.end,
-                  children: [
-                    Text(
-                      'Completions: ${_character.completedActivities}',
-                      style: Theme.of(context).textTheme.bodyMedium,
-                    ),
-                    Text(
-                      'Difficulty: '
-                      '${_character.difficultyCoefficient.toStringAsFixed(2)}x',
-                      style: Theme.of(context).textTheme.bodySmall,
-                    ),
-                  ],
+                Text(
+                  'Total: ${_character.totalCompletions} completions',
+                  style: Theme.of(context).textTheme.bodyMedium,
                 ),
               ],
             ),
@@ -299,8 +289,8 @@ class _GameScreenState extends State<GameScreen>
                           Text(activity.description),
                           const SizedBox(height: 4),
                           Text(
-                            'Duration: ${activity.calculateDuration(_character.stats, difficultyCoefficient: _character.difficultyCoefficient).toStringAsFixed(1)}s | '
-                            'Difficulty: ${activity.difficulty.toStringAsFixed(0)}',
+                            'Duration: ${activity.calculateDuration(_character.stats, difficultyCoefficient: _character.getDifficultyCoefficient(activity.id)).toStringAsFixed(1)}s | '
+                            'x${_character.getCompletions(activity.id)}',
                             style: Theme.of(context).textTheme.bodySmall,
                           ),
                           Text(

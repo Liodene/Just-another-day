@@ -88,7 +88,7 @@ void main() {
 
       expect(character.name, equals('Test'));
       expect(character.stats.strength, equals(1.0));
-      expect(character.completedActivities, equals(0));
+      expect(character.totalCompletions, equals(0));
     });
 
     test('should create with custom stats', () {
@@ -98,47 +98,68 @@ void main() {
       expect(character.stats.strength, equals(10.0));
     });
 
-    test('should create with custom completed activities', () {
-      final character = Character(name: 'Test', completedActivities: 5);
-
-      expect(character.completedActivities, equals(5));
-    });
-
-    test('difficultyCoefficient should be 1.0 with 0 completions', () {
-      final character = Character(name: 'Test', completedActivities: 0);
-
-      expect(character.difficultyCoefficient, equals(1.0));
-    });
-
-    test('difficultyCoefficient should be 1.10 with 1 completion', () {
-      final character = Character(name: 'Test', completedActivities: 1);
-
-      expect(character.difficultyCoefficient, closeTo(1.10, 0.001));
-    });
-
-    test('difficultyCoefficient should be 1.21 with 2 completions', () {
-      final character = Character(name: 'Test', completedActivities: 2);
-
-      expect(character.difficultyCoefficient, closeTo(1.21, 0.001));
-    });
-
-    test('difficultyCoefficient should scale exponentially', () {
-      final character = Character(name: 'Test', completedActivities: 10);
-
-      // 1.10^10 = 2.5937424601
-      expect(character.difficultyCoefficient, closeTo(2.594, 0.001));
-    });
-
-    test('completedActivities should be incrementable', () {
+    test('should track completions per activity', () {
       final character = Character(name: 'Test');
 
-      expect(character.difficultyCoefficient, equals(1.0));
+      expect(character.getCompletions('working'), equals(0));
+      expect(character.getCompletions('studying'), equals(0));
 
-      character.completedActivities++;
-      expect(character.difficultyCoefficient, closeTo(1.10, 0.001));
+      character.addCompletion('working');
+      character.addCompletion('working');
+      character.addCompletion('studying');
 
-      character.completedActivities++;
-      expect(character.difficultyCoefficient, closeTo(1.21, 0.001));
+      expect(character.getCompletions('working'), equals(2));
+      expect(character.getCompletions('studying'), equals(1));
+      expect(character.totalCompletions, equals(3));
+    });
+
+    test('getDifficultyCoefficient should be 1.0 with 0 completions', () {
+      final character = Character(name: 'Test');
+
+      expect(character.getDifficultyCoefficient('working'), equals(1.0));
+    });
+
+    test('getDifficultyCoefficient should be 1.10 with 1 completion', () {
+      final character = Character(name: 'Test');
+      character.addCompletion('working');
+
+      expect(character.getDifficultyCoefficient('working'), closeTo(1.10, 0.001));
+    });
+
+    test('getDifficultyCoefficient should be 1.21 with 2 completions', () {
+      final character = Character(name: 'Test');
+      character.addCompletion('working');
+      character.addCompletion('working');
+
+      expect(character.getDifficultyCoefficient('working'), closeTo(1.21, 0.001));
+    });
+
+    test('getDifficultyCoefficient should scale exponentially', () {
+      final character = Character(
+        name: 'Test',
+        activityCompletions: {'working': 10},
+      );
+
+      // 1.10^10 = 2.5937424601
+      expect(character.getDifficultyCoefficient('working'), closeTo(2.594, 0.001));
+    });
+
+    test('difficulty coefficients are independent per activity', () {
+      final character = Character(name: 'Test');
+
+      character.addCompletion('working');
+      character.addCompletion('working');
+      character.addCompletion('studying');
+
+      // Working: 2 completions = 1.21x
+      expect(character.getDifficultyCoefficient('working'), closeTo(1.21, 0.001));
+      // Studying: 1 completion = 1.10x
+      expect(
+        character.getDifficultyCoefficient('studying'),
+        closeTo(1.10, 0.001),
+      );
+      // Exercising: 0 completions = 1.0x
+      expect(character.getDifficultyCoefficient('exercising'), equals(1.0));
     });
   });
 }

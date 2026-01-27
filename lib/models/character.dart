@@ -106,8 +106,9 @@ class Character {
   Character({
     required this.name,
     CharacterStats? stats,
-    this.completedActivities = 0,
-  }) : stats = stats ?? CharacterStats();
+    Map<String, int>? activityCompletions,
+  })  : stats = stats ?? CharacterStats(),
+        _activityCompletions = activityCompletions ?? {};
 
   /// The character's name.
   final String name;
@@ -115,16 +116,33 @@ class Character {
   /// The character's stats.
   final CharacterStats stats;
 
-  /// The number of activities completed.
-  /// Each completion increases difficulty by 1.10x.
-  int completedActivities;
+  /// Completion count per activity type (by activity ID).
+  /// Each completion of an activity increases its difficulty by 1.10x.
+  final Map<String, int> _activityCompletions;
 
-  /// The difficulty coefficient based on completed activities.
-  /// Formula: 1.10 ^ completedActivities
+  /// Gets the number of completions for a specific activity.
+  int getCompletions(String activityId) {
+    return _activityCompletions[activityId] ?? 0;
+  }
+
+  /// Increments the completion count for a specific activity.
+  void addCompletion(String activityId) {
+    _activityCompletions[activityId] =
+        (_activityCompletions[activityId] ?? 0) + 1;
+  }
+
+  /// Gets the difficulty coefficient for a specific activity.
+  /// Formula: 1.10 ^ completions
   /// 0 completions = 1.0x, 1 completion = 1.1x, 2 completions = 1.21x, etc.
-  double get difficultyCoefficient {
-    if (completedActivities <= 0) return 1.0;
-    return _pow(1.10, completedActivities);
+  double getDifficultyCoefficient(String activityId) {
+    final completions = getCompletions(activityId);
+    if (completions <= 0) return 1.0;
+    return _pow(1.10, completions);
+  }
+
+  /// Gets total completions across all activities.
+  int get totalCompletions {
+    return _activityCompletions.values.fold(0, (sum, count) => sum + count);
   }
 
   /// Simple power function for double base and int exponent.
@@ -138,5 +156,5 @@ class Character {
 
   @override
   String toString() =>
-      'Character($name, completions: $completedActivities, $stats)';
+      'Character($name, totalCompletions: $totalCompletions, $stats)';
 }

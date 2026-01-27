@@ -83,10 +83,11 @@ class ActivityManager extends ChangeNotifier {
       return false;
     }
 
-    // Calculate duration based on character stats and level
+    // Calculate duration based on character stats and activity-specific
+    // difficulty coefficient
     final duration = activity.calculateDuration(
       character.stats,
-      difficultyCoefficient: character.difficultyCoefficient,
+      difficultyCoefficient: character.getDifficultyCoefficient(activity.id),
     );
 
     _currentProgress = ActivityProgress(
@@ -148,8 +149,8 @@ class ActivityManager extends ChangeNotifier {
     // Apply full rewards
     _applyRewards(activity, 1.0);
 
-    // Increment completed activities count (increases difficulty by 1.10x)
-    character.completedActivities++;
+    // Increment this activity's completion count (increases its difficulty)
+    character.addCompletion(activity.id);
 
     // Notify listeners
     _onActivityCompleted?.call(activity, activity.rewards);
@@ -159,7 +160,7 @@ class ActivityManager extends ChangeNotifier {
       // Restart the same activity with new difficulty coefficient
       final duration = activity.calculateDuration(
         character.stats,
-        difficultyCoefficient: character.difficultyCoefficient,
+        difficultyCoefficient: character.getDifficultyCoefficient(activity.id),
       );
       _currentProgress = ActivityProgress(
         activity: activity,
