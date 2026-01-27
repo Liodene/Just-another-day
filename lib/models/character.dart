@@ -129,22 +129,34 @@ class Character {
     required this.name,
     CharacterStats? stats,
     Map<String, int>? activityCompletions,
+    Map<String, double>? savedActivityProgress,
   })  : stats = stats ?? CharacterStats(),
-        _activityCompletions = activityCompletions ?? {};
+        _activityCompletions = activityCompletions ?? {},
+        _savedActivityProgress = savedActivityProgress ?? {};
 
   /// Creates a [Character] instance from a JSON map.
   factory Character.fromJson(Map<String, dynamic> json) {
-    final completionsJson =
-        json['activityCompletions'] as Map<String, dynamic>?;
-    final completions = completionsJson?.map(
-      (key, value) => MapEntry(key, (value as num).toInt()),
-    );
+    final completionsRaw = json['activityCompletions'];
+    Map<String, int>? completions;
+    if (completionsRaw != null && completionsRaw is Map) {
+      completions = completionsRaw.map(
+        (key, value) => MapEntry(key.toString(), (value as num).toInt()),
+      );
+    }
+    final progressRaw = json['savedActivityProgress'];
+    Map<String, double>? savedProgress;
+    if (progressRaw != null && progressRaw is Map) {
+      savedProgress = progressRaw.map(
+        (key, value) => MapEntry(key.toString(), (value as num).toDouble()),
+      );
+    }
     return Character(
       name: json['name'] as String? ?? 'Player',
       stats: json['stats'] != null
           ? CharacterStats.fromJson(json['stats'] as Map<String, dynamic>)
           : null,
       activityCompletions: completions,
+      savedActivityProgress: savedProgress,
     );
   }
 
@@ -154,6 +166,7 @@ class Character {
       'name': name,
       'stats': stats.toJson(),
       'activityCompletions': _activityCompletions,
+      'savedActivityProgress': _savedActivityProgress,
     };
   }
 
@@ -167,6 +180,10 @@ class Character {
   /// Each completion of an activity increases its difficulty by 1.10x.
   final Map<String, int> _activityCompletions;
 
+  /// Saved partial progress for activities (by activity ID).
+  /// Stores the progress percentage (0.0 to 1.0) when switching activities.
+  final Map<String, double> _savedActivityProgress;
+
   /// Gets the number of completions for a specific activity.
   int getCompletions(String activityId) {
     return _activityCompletions[activityId] ?? 0;
@@ -177,6 +194,27 @@ class Character {
     _activityCompletions[activityId] =
         (_activityCompletions[activityId] ?? 0) + 1;
   }
+
+  /// Saves partial progress for an activity.
+  void saveActivityProgress(String activityId, double progress) {
+    if (progress > 0 && progress < 1.0) {
+      _savedActivityProgress[activityId] = progress;
+    }
+  }
+
+  /// Gets saved partial progress for an activity (0.0 if none saved).
+  double getSavedProgress(String activityId) {
+    return _savedActivityProgress[activityId] ?? 0.0;
+  }
+
+  /// Clears saved progress for an activity (called when activity completes).
+  void clearSavedProgress(String activityId) {
+    _savedActivityProgress.remove(activityId);
+  }
+
+  /// Gets a copy of the saved activity progress map.
+  Map<String, double> get savedActivityProgress =>
+      Map<String, double>.from(_savedActivityProgress);
 
   /// Gets the difficulty coefficient for a specific activity.
   /// Formula: 1.10 ^ completions
@@ -206,6 +244,9 @@ class Character {
     _activityCompletions
       ..clear()
       ..addAll(other._activityCompletions);
+    _savedActivityProgress
+      ..clear()
+      ..addAll(other._savedActivityProgress);
   }
 
   /// Simple power function for double base and int exponent.

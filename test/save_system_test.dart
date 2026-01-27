@@ -146,6 +146,76 @@ void main() {
         equals(original.getCompletions('studying')),
       );
     });
+
+    test('toJson should include saved activity progress', () {
+      final character = Character(
+        name: 'TestPlayer',
+        savedActivityProgress: {'working': 0.5, 'studying': 0.75},
+      );
+
+      final json = character.toJson();
+
+      expect(json['savedActivityProgress']['working'], equals(0.5));
+      expect(json['savedActivityProgress']['studying'], equals(0.75));
+    });
+
+    test('fromJson should deserialize saved activity progress', () {
+      final json = {
+        'name': 'TestPlayer',
+        'stats': {
+          'strength': 1.0,
+          'intelligence': 1.0,
+          'endurance': 1.0,
+          'charisma': 1.0,
+          'agility': 1.0,
+        },
+        'activityCompletions': <String, int>{},
+        'savedActivityProgress': {'working': 0.5, 'exercising': 0.3},
+      };
+
+      final character = Character.fromJson(json);
+
+      expect(character.getSavedProgress('working'), equals(0.5));
+      expect(character.getSavedProgress('exercising'), equals(0.3));
+      expect(character.getSavedProgress('studying'), equals(0.0));
+    });
+
+    test('fromJson handles missing savedActivityProgress', () {
+      final json = {
+        'name': 'TestPlayer',
+        'stats': {
+          'strength': 1.0,
+          'intelligence': 1.0,
+          'endurance': 1.0,
+          'charisma': 1.0,
+          'agility': 1.0,
+        },
+        'activityCompletions': <String, int>{},
+      };
+
+      final character = Character.fromJson(json);
+
+      expect(character.getSavedProgress('working'), equals(0.0));
+      expect(character.savedActivityProgress, isEmpty);
+    });
+
+    test('round trip preserves saved activity progress', () {
+      final original = Character(
+        name: 'TestPlayer',
+        savedActivityProgress: {'working': 0.5, 'studying': 0.75},
+      );
+
+      final restored = Character.fromJson(original.toJson());
+
+      expect(
+        restored.getSavedProgress('working'),
+        equals(original.getSavedProgress('working')),
+      );
+      expect(
+        restored.getSavedProgress('studying'),
+        equals(original.getSavedProgress('studying')),
+      );
+    });
   });
 
   group('Character restoreFrom', () {
@@ -184,6 +254,35 @@ void main() {
 
       expect(target.getCompletions('exercising'), equals(0));
       expect(target.getCompletions('working'), equals(5));
+    });
+
+    test('should restore saved activity progress', () {
+      final target = Character(name: 'Target');
+      final source = Character(
+        name: 'Source',
+        savedActivityProgress: {'working': 0.5, 'studying': 0.3},
+      );
+
+      target.restoreFrom(source);
+
+      expect(target.getSavedProgress('working'), equals(0.5));
+      expect(target.getSavedProgress('studying'), equals(0.3));
+    });
+
+    test('should clear previous saved progress before restoring', () {
+      final target = Character(
+        name: 'Target',
+        savedActivityProgress: {'exercising': 0.75},
+      );
+      final source = Character(
+        name: 'Source',
+        savedActivityProgress: {'working': 0.5},
+      );
+
+      target.restoreFrom(source);
+
+      expect(target.getSavedProgress('exercising'), equals(0.0));
+      expect(target.getSavedProgress('working'), equals(0.5));
     });
   });
 
