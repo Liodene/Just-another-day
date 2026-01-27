@@ -117,7 +117,12 @@ void main() {
 
     test('should save partial progress when switching activities', () {
       // Start working activity
-      activityManager.startActivity(Activities.working, force: true);
+      final started = activityManager.startActivity(
+        Activities.working,
+        force: true,
+      );
+      expect(started, isTrue);
+      expect(activityManager.currentProgress, isNotNull);
 
       // Advance time to get 50% progress
       // Working: baseDuration=10, difficulty=5, primary=endurance
@@ -125,6 +130,7 @@ void main() {
       // For 50% progress: need 25 seconds = 25000ms
       tickerProvider.ticker!.advance(const Duration(milliseconds: 25000));
 
+      expect(activityManager.currentProgress, isNotNull);
       expect(activityManager.currentProgress!.progress, closeTo(0.5, 0.01));
 
       // Now switch to studying - should save working progress
@@ -134,13 +140,21 @@ void main() {
       expect(character.getSavedProgress('working'), closeTo(0.5, 0.01));
 
       // Current activity should now be studying
+      expect(activityManager.currentActivity, isNotNull);
       expect(activityManager.currentActivity!.id, equals('studying'));
     });
 
     test('should restore saved progress when returning to activity', () {
       // Start working and get some progress
-      activityManager.startActivity(Activities.working, force: true);
+      final started = activityManager.startActivity(
+        Activities.working,
+        force: true,
+      );
+      expect(started, isTrue);
+      expect(activityManager.currentProgress, isNotNull);
+
       tickerProvider.ticker!.advance(const Duration(milliseconds: 25000));
+      expect(activityManager.currentProgress, isNotNull);
       expect(activityManager.currentProgress!.progress, closeTo(0.5, 0.01));
 
       // Switch to studying
@@ -149,6 +163,7 @@ void main() {
 
       // Switch back to working - should restore progress
       activityManager.startActivity(Activities.working, force: true);
+      expect(activityManager.currentProgress, isNotNull);
 
       // Saved progress should be cleared
       expect(character.getSavedProgress('working'), equals(0.0));
@@ -179,11 +194,17 @@ void main() {
 
     test('should save progress when stopping activity', () {
       // Start working activity
-      activityManager.startActivity(Activities.working, force: true);
+      final started = activityManager.startActivity(
+        Activities.working,
+        force: true,
+      );
+      expect(started, isTrue);
+      expect(activityManager.currentProgress, isNotNull);
 
       // Advance time to get 30% progress (15 seconds = 15000ms)
       tickerProvider.ticker!.advance(const Duration(milliseconds: 15000));
 
+      expect(activityManager.currentProgress, isNotNull);
       expect(activityManager.currentProgress!.progress, closeTo(0.3, 0.01));
 
       // Stop activity - should save progress by default
@@ -223,10 +244,17 @@ void main() {
 
     test('should not save progress when switching to same activity', () {
       // Start working activity
-      activityManager.startActivity(Activities.working, force: true);
+      final started = activityManager.startActivity(
+        Activities.working,
+        force: true,
+      );
+      expect(started, isTrue);
+      expect(activityManager.currentProgress, isNotNull);
 
       // Advance time to get 50% progress
       tickerProvider.ticker!.advance(const Duration(milliseconds: 25000));
+
+      expect(activityManager.currentProgress, isNotNull);
 
       // Try to "switch" to the same activity with force
       // This should continue the activity, not save/reset
@@ -238,6 +266,7 @@ void main() {
       expect(result, isFalse); // Can't start - already running
 
       // Progress should remain unchanged
+      expect(activityManager.currentProgress, isNotNull);
       expect(
         activityManager.currentProgress!.progress,
         closeTo(initialProgress, 0.01),
