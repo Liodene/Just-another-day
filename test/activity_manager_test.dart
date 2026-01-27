@@ -117,16 +117,13 @@ void main() {
 
     test('should save partial progress when switching activities', () {
       // Start working activity
-      final started = activityManager.startActivity(
-        Activities.working,
-        force: true,
-      );
-      expect(started, isTrue);
-      expect(activityManager.currentProgress, isNotNull);
+      activityManager.startActivity(Activities.working, force: true);
 
-      // Manually set elapsed time to simulate 50% progress
-      // Working duration: 10 * (5/1) = 50 seconds, so 50% = 25 seconds
-      activityManager.currentProgress!.elapsedTime = 25.0;
+      // Advance time to get 50% progress
+      // Working: baseDuration=10, difficulty=5, primary=endurance
+      // With endurance=1: duration = 10 * (5/1) = 50 seconds
+      // For 50% progress: need 25 seconds = 25000ms
+      tickerProvider.ticker!.advance(const Duration(milliseconds: 25000));
 
       expect(activityManager.currentProgress!.progress, closeTo(0.5, 0.01));
 
@@ -137,21 +134,13 @@ void main() {
       expect(character.getSavedProgress('working'), closeTo(0.5, 0.01));
 
       // Current activity should now be studying
-      expect(activityManager.currentActivity, isNotNull);
       expect(activityManager.currentActivity!.id, equals('studying'));
     });
 
     test('should restore saved progress when returning to activity', () {
       // Start working and get some progress
-      final started = activityManager.startActivity(
-        Activities.working,
-        force: true,
-      );
-      expect(started, isTrue);
-      expect(activityManager.currentProgress, isNotNull);
-
-      // Manually set elapsed time to simulate 50% progress
-      activityManager.currentProgress!.elapsedTime = 25.0;
+      activityManager.startActivity(Activities.working, force: true);
+      tickerProvider.ticker!.advance(const Duration(milliseconds: 25000));
       expect(activityManager.currentProgress!.progress, closeTo(0.5, 0.01));
 
       // Switch to studying
@@ -160,7 +149,6 @@ void main() {
 
       // Switch back to working - should restore progress
       activityManager.startActivity(Activities.working, force: true);
-      expect(activityManager.currentProgress, isNotNull);
 
       // Saved progress should be cleared
       expect(character.getSavedProgress('working'), equals(0.0));
@@ -191,15 +179,11 @@ void main() {
 
     test('should save progress when stopping activity', () {
       // Start working activity
-      final started = activityManager.startActivity(
-        Activities.working,
-        force: true,
-      );
-      expect(started, isTrue);
-      expect(activityManager.currentProgress, isNotNull);
+      activityManager.startActivity(Activities.working, force: true);
 
-      // Manually set elapsed time to simulate 30% progress (15 seconds of 50)
-      activityManager.currentProgress!.elapsedTime = 15.0;
+      // Advance time to get 30% progress (15 seconds = 15000ms)
+      tickerProvider.ticker!.advance(const Duration(milliseconds: 15000));
+
       expect(activityManager.currentProgress!.progress, closeTo(0.3, 0.01));
 
       // Stop activity - should save progress by default
@@ -212,10 +196,9 @@ void main() {
     test('should not save progress when stopping with grantPartialRewards', () {
       // Start working activity
       activityManager.startActivity(Activities.working, force: true);
-      expect(activityManager.currentProgress, isNotNull);
 
-      // Manually set elapsed time to simulate 30% progress
-      activityManager.currentProgress!.elapsedTime = 15.0;
+      // Advance time to get 30% progress
+      tickerProvider.ticker!.advance(const Duration(milliseconds: 15000));
 
       // Stop activity with partial rewards (don't save progress)
       activityManager.stopActivity(grantPartialRewards: true);
@@ -227,10 +210,9 @@ void main() {
     test('should not save progress when stopping with saveProgress=false', () {
       // Start working activity
       activityManager.startActivity(Activities.working, force: true);
-      expect(activityManager.currentProgress, isNotNull);
 
-      // Manually set elapsed time to simulate 30% progress
-      activityManager.currentProgress!.elapsedTime = 15.0;
+      // Advance time to get 30% progress
+      tickerProvider.ticker!.advance(const Duration(milliseconds: 15000));
 
       // Stop activity without saving progress
       activityManager.stopActivity(saveProgress: false);
@@ -241,23 +223,21 @@ void main() {
 
     test('should not save progress when switching to same activity', () {
       // Start working activity
-      final started = activityManager.startActivity(
-        Activities.working,
-        force: true,
-      );
-      expect(started, isTrue);
-      expect(activityManager.currentProgress, isNotNull);
+      activityManager.startActivity(Activities.working, force: true);
 
-      // Manually set elapsed time to simulate 50% progress
-      activityManager.currentProgress!.elapsedTime = 25.0;
+      // Advance time to get 50% progress
+      tickerProvider.ticker!.advance(const Duration(milliseconds: 25000));
+
+      // Try to "switch" to the same activity with force
+      // This should continue the activity, not save/reset
       final initialProgress = activityManager.currentProgress!.progress;
 
-      // Try to start the same activity without force - should fail
+      // Actually, with force=true it restarts. Let's test without force first
+      // to confirm it doesn't switch when activity is same
       final result = activityManager.startActivity(Activities.working);
       expect(result, isFalse); // Can't start - already running
 
       // Progress should remain unchanged
-      expect(activityManager.currentProgress, isNotNull);
       expect(
         activityManager.currentProgress!.progress,
         closeTo(initialProgress, 0.01),
@@ -267,10 +247,7 @@ void main() {
     test('partial progress should persist through save/restore', () {
       // Start working and get progress
       activityManager.startActivity(Activities.working, force: true);
-      expect(activityManager.currentProgress, isNotNull);
-
-      // Manually set elapsed time to simulate 50% progress
-      activityManager.currentProgress!.elapsedTime = 25.0;
+      tickerProvider.ticker!.advance(const Duration(milliseconds: 25000));
 
       // Switch to studying to save working progress
       activityManager.startActivity(Activities.studying, force: true);
@@ -286,20 +263,16 @@ void main() {
     test('multiple activities should track progress independently', () {
       // Start working and get 50% progress
       activityManager.startActivity(Activities.working, force: true);
-      expect(activityManager.currentProgress, isNotNull);
-
-      // Manually set elapsed time to simulate 50% progress (25 of 50 seconds)
-      activityManager.currentProgress!.elapsedTime = 25.0;
+      tickerProvider.ticker!.advance(const Duration(milliseconds: 25000));
 
       // Switch to studying
       activityManager.startActivity(Activities.studying, force: true);
-      expect(activityManager.currentProgress, isNotNull);
 
       // Get 30% progress on studying
       // Studying: baseDuration=15, difficulty=8, primary=intelligence
       // With intelligence=1: duration = 15 * (8/1) = 120 seconds
-      // For 30% progress: need 36 seconds
-      activityManager.currentProgress!.elapsedTime = 36.0;
+      // For 30% progress: need 36 seconds = 36000ms
+      tickerProvider.ticker!.advance(const Duration(milliseconds: 36000));
 
       // Switch to exercising
       activityManager.startActivity(Activities.exercising, force: true);
