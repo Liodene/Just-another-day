@@ -1,5 +1,3 @@
-import 'dart:ui';
-
 import 'package:flutter/material.dart';
 
 import 'engine/activity_manager.dart';
@@ -109,13 +107,7 @@ class _GameScreenState extends State<GameScreen>
                   const SizedBox(width: 4),
                   Text(
                     gameTime.formattedTime,
-                    style:
-                        Theme.of(context).textTheme.bodyMedium?.copyWith(
-                              fontFamily: 'monospace',
-                              fontFeatures: [
-                                const FontFeature.tabularFigures(),
-                              ],
-                            ),
+                    style: Theme.of(context).textTheme.bodyMedium,
                   ),
                 ],
               ),
