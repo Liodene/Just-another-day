@@ -12,6 +12,36 @@ class GameTime {
         _dayCount = 1,
         _realTimePlayedMs = 0.0;
 
+  /// Creates a [GameTime] instance with direct internal state.
+  GameTime._internal({
+    required this.timeMultiplier,
+    required double inGameSeconds,
+    required int dayCount,
+    required double realTimePlayedMs,
+  })  : _inGameSeconds = inGameSeconds,
+        _dayCount = dayCount,
+        _realTimePlayedMs = realTimePlayedMs;
+
+  /// Creates a [GameTime] instance from a JSON map.
+  factory GameTime.fromJson(Map<String, dynamic> json) {
+    return GameTime._internal(
+      timeMultiplier: (json['timeMultiplier'] as num?)?.toDouble() ?? 300.0,
+      inGameSeconds: (json['inGameSeconds'] as num?)?.toDouble() ?? 28800.0,
+      dayCount: (json['dayCount'] as num?)?.toInt() ?? 1,
+      realTimePlayedMs: (json['realTimePlayedMs'] as num?)?.toDouble() ?? 0.0,
+    );
+  }
+
+  /// Converts this [GameTime] to a JSON map.
+  Map<String, dynamic> toJson() {
+    return {
+      'timeMultiplier': timeMultiplier,
+      'inGameSeconds': _inGameSeconds,
+      'dayCount': _dayCount,
+      'realTimePlayedMs': _realTimePlayedMs,
+    };
+  }
+
   /// The multiplier for converting real time to in-game time.
   /// Default: 300 (1 real second = 300 in-game seconds = 5 in-game minutes).
   final double timeMultiplier;
@@ -88,6 +118,16 @@ class GameTime {
     _dayCount = 1;
     _realTimePlayedMs = 0.0;
   }
+
+  /// Restores state from another GameTime instance (used when loading a save).
+  void restoreFrom(GameTime other) {
+    _inGameSeconds = other._inGameSeconds;
+    _dayCount = other._dayCount;
+    _realTimePlayedMs = other._realTimePlayedMs;
+  }
+
+  /// Gets the internal in-game seconds value.
+  double get inGameSeconds => _inGameSeconds;
 
   @override
   String toString() => 'GameTime(Day $_dayCount, $formattedTime)';

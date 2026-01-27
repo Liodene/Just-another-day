@@ -1,12 +1,32 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:just_another_day/main.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+
+/// Helper function to pump until the game is loaded.
+/// We can't use pumpAndSettle because the autosave timer keeps firing.
+Future<void> pumpUntilLoaded(WidgetTester tester) async {
+  // Pump frames until the loading indicator is gone
+  for (int i = 0; i < 10; i++) {
+    await tester.pump(const Duration(milliseconds: 100));
+    if (find.byType(CircularProgressIndicator).evaluate().isEmpty) {
+      break;
+    }
+  }
+}
 
 void main() {
+  setUp(() {
+    // Mock SharedPreferences for tests
+    SharedPreferences.setMockInitialValues({});
+  });
+
   testWidgets(
     'GameScreen displays character stats',
     (WidgetTester tester) async {
       await tester.pumpWidget(const MyApp());
+      // Wait for async initialization to complete
+      await pumpUntilLoaded(tester);
 
       // Should display the app title
       expect(find.text('Just Another Day'), findsOneWidget);
@@ -31,6 +51,8 @@ void main() {
     'GameScreen displays available activities',
     (WidgetTester tester) async {
       await tester.pumpWidget(const MyApp());
+      // Wait for async initialization to complete
+      await pumpUntilLoaded(tester);
 
       // Should display pre-defined activities
       expect(find.text('Working'), findsOneWidget);
@@ -44,6 +66,8 @@ void main() {
     'GameScreen can start an activity',
     (WidgetTester tester) async {
       await tester.pumpWidget(const MyApp());
+      // Wait for async initialization to complete
+      await pumpUntilLoaded(tester);
 
       // Initially no activity
       expect(
@@ -71,6 +95,8 @@ void main() {
     'GameScreen can stop an activity',
     (WidgetTester tester) async {
       await tester.pumpWidget(const MyApp());
+      // Wait for async initialization to complete
+      await pumpUntilLoaded(tester);
 
       // Start an activity
       final startButtons = find.widgetWithText(ElevatedButton, 'Start');
@@ -98,6 +124,8 @@ void main() {
     'GameScreen has pause/resume button',
     (WidgetTester tester) async {
       await tester.pumpWidget(const MyApp());
+      // Wait for async initialization to complete
+      await pumpUntilLoaded(tester);
 
       // Should find pause button in app bar
       final pauseButton = find.byIcon(Icons.pause);
@@ -116,6 +144,8 @@ void main() {
     'GameScreen has auto-repeat toggle',
     (WidgetTester tester) async {
       await tester.pumpWidget(const MyApp());
+      // Wait for async initialization to complete
+      await pumpUntilLoaded(tester);
 
       expect(find.text('Auto-repeat'), findsOneWidget);
       expect(find.byType(Switch), findsOneWidget);
