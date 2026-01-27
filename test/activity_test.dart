@@ -42,6 +42,27 @@ void main() {
       expect(duration, greaterThanOrEqualTo(1.0)); // 10% of 10
     });
 
+    test('calculateDuration should apply difficulty coefficient', () {
+      final stats = CharacterStats(strength: 5.0);
+
+      // Without coefficient (default 1.0): duration = 10 * (5/5) = 10
+      expect(testActivity.calculateDuration(stats), equals(10.0));
+
+      // With coefficient 1.1: effectiveDiff = 5 * 1.1 = 5.5
+      // duration = 10 * (5.5/5) = 11
+      expect(
+        testActivity.calculateDuration(stats, difficultyCoefficient: 1.1),
+        equals(11.0),
+      );
+
+      // With coefficient 2.0: effectiveDiff = 5 * 2.0 = 10
+      // duration = 10 * (10/5) = 20
+      expect(
+        testActivity.calculateDuration(stats, difficultyCoefficient: 2.0),
+        equals(20.0),
+      );
+    });
+
     test('meetsRequirements should check all requirements', () {
       const activityWithRequirements = Activity(
         id: 'advanced',

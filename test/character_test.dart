@@ -88,6 +88,7 @@ void main() {
 
       expect(character.name, equals('Test'));
       expect(character.stats.strength, equals(1.0));
+      expect(character.level, equals(1));
     });
 
     test('should create with custom stats', () {
@@ -95,6 +96,37 @@ void main() {
       final character = Character(name: 'Test', stats: stats);
 
       expect(character.stats.strength, equals(10.0));
+    });
+
+    test('should create with custom level', () {
+      final character = Character(name: 'Test', level: 5);
+
+      expect(character.level, equals(5));
+    });
+
+    test('difficultyCoefficient should be 1.0 at level 1', () {
+      final character = Character(name: 'Test', level: 1);
+
+      expect(character.difficultyCoefficient, equals(1.0));
+    });
+
+    test('difficultyCoefficient should be 1.10 at level 2', () {
+      final character = Character(name: 'Test', level: 2);
+
+      expect(character.difficultyCoefficient, closeTo(1.10, 0.001));
+    });
+
+    test('difficultyCoefficient should be 1.21 at level 3', () {
+      final character = Character(name: 'Test', level: 3);
+
+      expect(character.difficultyCoefficient, closeTo(1.21, 0.001));
+    });
+
+    test('difficultyCoefficient should scale exponentially', () {
+      final character = Character(name: 'Test', level: 10);
+
+      // 1.10^9 = 2.357947691
+      expect(character.difficultyCoefficient, closeTo(2.357, 0.001));
     });
   });
 }

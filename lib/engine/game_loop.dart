@@ -1,7 +1,7 @@
 import 'package:flutter/scheduler.dart';
 
 /// Callback function type for game loop updates.
-/// [deltaTime] is the time elapsed since the last frame in seconds.
+/// [deltaTime] is the time elapsed since the last frame in milliseconds.
 typedef GameLoopCallback = void Function(double deltaTime);
 
 /// A game loop engine based on Flutter's [Ticker].
@@ -40,7 +40,7 @@ class GameLoop {
 
   /// Adds a callback to be called on each frame.
   ///
-  /// The callback receives the delta time in seconds since the last frame.
+  /// The callback receives the delta time in milliseconds since the last frame.
   /// Returns a function that can be called to remove the callback.
   VoidCallback addCallback(GameLoopCallback callback) {
     _callbacks.add(callback);
@@ -105,8 +105,8 @@ class GameLoop {
   }
 
   void _onTick(Duration elapsed) {
-    // Calculate delta time in seconds
-    final deltaTime = (elapsed - _lastElapsed).inMicroseconds / 1000000.0;
+    // Calculate delta time in milliseconds
+    final deltaTime = (elapsed - _lastElapsed).inMicroseconds / 1000.0;
     _lastElapsed = elapsed;
 
     // Call all registered callbacks

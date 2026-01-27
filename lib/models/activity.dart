@@ -43,15 +43,22 @@ class Activity {
   /// If null, no requirements are needed.
   final Map<StatType, double>? requirements;
 
-  /// Calculates the actual duration based on character stats.
+  /// Calculates the actual duration based on character stats and level.
   ///
-  /// Higher stats reduce the duration. The formula is:
-  /// actualDuration = baseDuration * (difficulty / primaryStatValue)
+  /// Higher stats reduce the duration, but higher levels increase it.
+  /// The formula is:
+  /// effectiveDifficulty = difficulty * difficultyCoefficient
+  /// actualDuration = baseDuration * (effectiveDifficulty / primaryStatValue)
   ///
+  /// The [difficultyCoefficient] is 1.10 per level (1.10^(level-1)).
   /// The duration is clamped to be at least 10% of the base duration.
-  double calculateDuration(CharacterStats stats) {
+  double calculateDuration(
+    CharacterStats stats, {
+    double difficultyCoefficient = 1.0,
+  }) {
     final statValue = stats.getStat(primaryStat);
-    final multiplier = (difficulty / statValue).clamp(0.1, 10.0);
+    final effectiveDifficulty = difficulty * difficultyCoefficient;
+    final multiplier = (effectiveDifficulty / statValue).clamp(0.1, 10.0);
     return baseDuration * multiplier;
   }
 

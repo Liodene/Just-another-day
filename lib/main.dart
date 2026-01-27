@@ -127,9 +127,38 @@ class _GameScreenState extends State<GameScreen>
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  _character.name,
+                  style: Theme.of(context).textTheme.titleLarge,
+                ),
+                Row(
+                  children: [
+                    IconButton(
+                      icon: const Icon(Icons.remove),
+                      onPressed: _character.level > 1
+                          ? () => setState(() => _character.level--)
+                          : null,
+                      iconSize: 20,
+                    ),
+                    Text(
+                      'Lv.${_character.level}',
+                      style: Theme.of(context).textTheme.titleMedium,
+                    ),
+                    IconButton(
+                      icon: const Icon(Icons.add),
+                      onPressed: () => setState(() => _character.level++),
+                      iconSize: 20,
+                    ),
+                  ],
+                ),
+              ],
+            ),
             Text(
-              _character.name,
-              style: Theme.of(context).textTheme.titleLarge,
+              'Difficulty: ${_character.difficultyCoefficient.toStringAsFixed(2)}x',
+              style: Theme.of(context).textTheme.bodySmall,
             ),
             const SizedBox(height: 12),
             _buildStatRow('Strength', stats.strength, Colors.red),
@@ -280,7 +309,7 @@ class _GameScreenState extends State<GameScreen>
                           Text(activity.description),
                           const SizedBox(height: 4),
                           Text(
-                            'Duration: ${activity.calculateDuration(_character.stats).toStringAsFixed(1)}s | '
+                            'Duration: ${activity.calculateDuration(_character.stats, difficultyCoefficient: _character.difficultyCoefficient).toStringAsFixed(1)}s | '
                             'Difficulty: ${activity.difficulty.toStringAsFixed(0)}',
                             style: Theme.of(context).textTheme.bodySmall,
                           ),

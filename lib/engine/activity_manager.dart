@@ -83,8 +83,11 @@ class ActivityManager extends ChangeNotifier {
       return false;
     }
 
-    // Calculate duration based on character stats
-    final duration = activity.calculateDuration(character.stats);
+    // Calculate duration based on character stats and level
+    final duration = activity.calculateDuration(
+      character.stats,
+      difficultyCoefficient: character.difficultyCoefficient,
+    );
 
     _currentProgress = ActivityProgress(
       activity: activity,
@@ -124,10 +127,12 @@ class ActivityManager extends ChangeNotifier {
     return Activities.all;
   }
 
-  void _onGameLoopTick(double deltaTime) {
+  void _onGameLoopTick(double deltaTimeMs) {
     if (_currentProgress == null) return;
 
-    final justCompleted = _currentProgress!.update(deltaTime);
+    // Convert milliseconds to seconds for activity progress
+    final deltaTimeSec = deltaTimeMs / 1000.0;
+    final justCompleted = _currentProgress!.update(deltaTimeSec);
     _onProgressChanged?.call(_currentProgress);
 
     if (justCompleted) {
@@ -149,7 +154,10 @@ class ActivityManager extends ChangeNotifier {
     // Handle auto-repeat
     if (_autoRepeat) {
       // Restart the same activity
-      final duration = activity.calculateDuration(character.stats);
+      final duration = activity.calculateDuration(
+        character.stats,
+        difficultyCoefficient: character.difficultyCoefficient,
+      );
       _currentProgress = ActivityProgress(
         activity: activity,
         totalDuration: duration,

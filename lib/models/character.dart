@@ -106,6 +106,7 @@ class Character {
   Character({
     required this.name,
     CharacterStats? stats,
+    this.level = 1,
   }) : stats = stats ?? CharacterStats();
 
   /// The character's name.
@@ -114,6 +115,31 @@ class Character {
   /// The character's stats.
   final CharacterStats stats;
 
+  /// The character's current level.
+  /// Higher levels increase activity difficulty with a 1.10x coefficient.
+  int level;
+
+  /// Calculates the difficulty coefficient based on the character's level.
+  /// Each level multiplies difficulty by 1.10.
+  double get difficultyCoefficient => _calculateDifficultyCoefficient(level);
+
+  /// Calculates the difficulty coefficient for a given level.
+  /// Formula: 1.10 ^ (level - 1)
+  /// Level 1 = 1.0x, Level 2 = 1.1x, Level 3 = 1.21x, etc.
+  static double _calculateDifficultyCoefficient(int level) {
+    if (level <= 1) return 1.0;
+    return _pow(1.10, level - 1);
+  }
+
+  /// Simple power function for double base and int exponent.
+  static double _pow(double base, int exponent) {
+    var result = 1.0;
+    for (var i = 0; i < exponent; i++) {
+      result *= base;
+    }
+    return result;
+  }
+
   @override
-  String toString() => 'Character($name, $stats)';
+  String toString() => 'Character($name, level: $level, $stats)';
 }
