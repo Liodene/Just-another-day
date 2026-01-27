@@ -139,7 +139,8 @@ class _ActivityPlanItem extends StatelessWidget {
         title: Text(
           activity.name,
           style: TextStyle(
-            fontWeight: isCurrentActivity ? FontWeight.bold : FontWeight.normal,
+            fontWeight:
+                isCurrentActivity ? FontWeight.bold : FontWeight.normal,
           ),
         ),
         subtitle: isCurrentActivity

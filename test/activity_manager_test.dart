@@ -450,7 +450,8 @@ void main() {
       activityManager.addToPlan(Activities.working);
       activityManager.addToPlan(Activities.studying);
 
-      final result = activityManager.removeActivityFromPlan(Activities.studying);
+      final result =
+          activityManager.removeActivityFromPlan(Activities.studying);
 
       expect(result, isTrue);
       expect(activityManager.activityPlan.length, equals(1));
