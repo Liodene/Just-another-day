@@ -249,7 +249,7 @@ class SaveMenuButton extends StatelessWidget {
       ),
     );
 
-    if (confirm == true) {
+    if (confirm ?? false) {
       onImport(saveData);
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
