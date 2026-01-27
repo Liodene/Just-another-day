@@ -1,3 +1,5 @@
+import 'dart:ui';
+
 import 'package:flutter/material.dart';
 
 import 'engine/activity_manager.dart';
@@ -75,10 +77,45 @@ class _GameScreenState extends State<GameScreen>
 
   @override
   Widget build(BuildContext context) {
+    final gameTime = _activityManager.gameTime;
+
     return Scaffold(
       appBar: AppBar(
         backgroundColor: Theme.of(context).colorScheme.inversePrimary,
-        title: const Text('Just Another Day'),
+        title: Row(
+          children: [
+            const Text('Just Another Day'),
+            const SizedBox(width: 16),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+              decoration: BoxDecoration(
+                color: Theme.of(context).colorScheme.surface,
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Icon(Icons.calendar_today, size: 16),
+                  const SizedBox(width: 4),
+                  Text(
+                    'Day ${gameTime.dayCount}',
+                    style: Theme.of(context).textTheme.bodyMedium,
+                  ),
+                  const SizedBox(width: 12),
+                  const Icon(Icons.access_time, size: 16),
+                  const SizedBox(width: 4),
+                  Text(
+                    gameTime.formattedTime,
+                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                          fontFamily: 'monospace',
+                          fontFeatures: [const FontFeature.tabularFigures()],
+                        ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
         actions: [
           // Game loop control
           IconButton(

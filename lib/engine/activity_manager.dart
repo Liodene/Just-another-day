@@ -2,6 +2,7 @@ import 'package:flutter/foundation.dart';
 
 import '../models/activity.dart';
 import '../models/character.dart';
+import '../models/game_time.dart';
 import 'game_loop.dart';
 
 /// Callback type for when an activity completes.
@@ -20,17 +21,23 @@ typedef ActivityProgressCallback = void Function(ActivityProgress? progress);
 /// - Tracking activity progress
 /// - Applying stat rewards on completion
 /// - Auto-repeating activities
+/// - Tracking in-game time and real time played
 class ActivityManager extends ChangeNotifier {
   /// Creates a new [ActivityManager].
   ActivityManager({
     required this.character,
     required GameLoop gameLoop,
-  }) : _gameLoop = gameLoop {
+    GameTime? gameTime,
+  })  : _gameLoop = gameLoop,
+        gameTime = gameTime ?? GameTime() {
     _removeCallback = _gameLoop.addCallback(_onGameLoopTick);
   }
 
   /// The character performing activities.
   final Character character;
+
+  /// The in-game clock and time tracker.
+  final GameTime gameTime;
 
   final GameLoop _gameLoop;
   late final VoidCallback _removeCallback;
@@ -129,7 +136,13 @@ class ActivityManager extends ChangeNotifier {
   }
 
   void _onGameLoopTick(double deltaTimeMs) {
-    if (_currentProgress == null) return;
+    // Update game time (always, even without active activity)
+    gameTime.update(deltaTimeMs);
+
+    if (_currentProgress == null) {
+      notifyListeners();
+      return;
+    }
 
     // Convert milliseconds to seconds for activity progress
     final deltaTimeSec = deltaTimeMs / 1000.0;
