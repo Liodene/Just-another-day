@@ -8,3 +8,4 @@ export 'game_time_display.dart';
 export 'save_menu_button.dart';
 export 'stat_row.dart';
 export 'stats_card.dart';
+export 'theme_selector.dart';

@@ -5,31 +5,60 @@ import 'engine/game_loop.dart';
 import 'engine/save_manager.dart';
 import 'models/character.dart';
 import 'models/game_time.dart';
+import 'theme/theme.dart';
 import 'widgets/widgets.dart';
 
 void main() {
   runApp(const MyApp());
 }
 
-class MyApp extends StatelessWidget {
+class MyApp extends StatefulWidget {
   const MyApp({super.key});
+
+  @override
+  State<MyApp> createState() => _MyAppState();
+}
+
+class _MyAppState extends State<MyApp> {
+  late final ThemeProvider _themeProvider;
+
+  @override
+  void initState() {
+    super.initState();
+    _themeProvider = ThemeProvider();
+    _themeProvider.addListener(_onThemeChanged);
+  }
+
+  void _onThemeChanged() {
+    setState(() {});
+  }
+
+  @override
+  void dispose() {
+    _themeProvider.removeListener(_onThemeChanged);
+    _themeProvider.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
       title: 'Just Another Day',
-      theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
-        useMaterial3: true,
-      ),
-      home: const GameScreen(),
+      theme: _themeProvider.themeData,
+      home: GameScreen(themeProvider: _themeProvider),
     );
   }
 }
 
 /// Main game screen that demonstrates the game loop and activity system.
 class GameScreen extends StatefulWidget {
-  const GameScreen({super.key});
+  const GameScreen({
+    super.key,
+    required this.themeProvider,
+  });
+
+  /// The theme provider for managing app theme.
+  final ThemeProvider themeProvider;
 
   @override
   State<GameScreen> createState() => _GameScreenState();
@@ -142,14 +171,13 @@ class _GameScreenState extends State<GameScreen>
     return Scaffold(
       appBar: AppBar(
         backgroundColor: Theme.of(context).colorScheme.inversePrimary,
-        title: Row(
-          children: [
-            const Text('Just Another Day'),
-            const SizedBox(width: 16),
-            GameTimeDisplay(gameTime: _activityManager.gameTime),
-          ],
-        ),
+        title: const Text('Just Another Day'),
         actions: [
+          ThemeSelector(
+            currentTheme: widget.themeProvider.currentTheme,
+            onThemeChanged: widget.themeProvider.setTheme,
+            onToggleDarkMode: widget.themeProvider.toggleDarkMode,
+          ),
           SaveMenuButton(
             saveManager: _saveManager,
             onImport: _handleImport,
