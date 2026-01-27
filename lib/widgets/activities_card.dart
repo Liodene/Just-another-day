@@ -28,26 +28,27 @@ class ActivitiesCard extends StatelessWidget {
         padding: const EdgeInsets.all(16.0),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
           children: [
             Text(
               'Activities',
               style: Theme.of(context).textTheme.titleMedium,
             ),
             const SizedBox(height: 12),
-            Expanded(
-              child: ListView.builder(
-                itemCount: activities.length,
-                itemBuilder: (context, index) {
-                  final activity = activities[index];
-                  return ActivityListItem(
-                    activity: activity,
-                    character: character,
-                    isCurrentActivity: currentActivityId == activity.id,
-                    canStart: !hasActiveActivity,
-                    onStart: () => onStartActivity(activity),
-                  );
-                },
-              ),
+            ListView.builder(
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              itemCount: activities.length,
+              itemBuilder: (context, index) {
+                final activity = activities[index];
+                return ActivityListItem(
+                  activity: activity,
+                  character: character,
+                  isCurrentActivity: currentActivityId == activity.id,
+                  canStart: !hasActiveActivity,
+                  onStart: () => onStartActivity(activity),
+                );
+              },
             ),
           ],
         ),

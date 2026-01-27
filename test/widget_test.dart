@@ -53,6 +53,8 @@ void main() {
 
       // Find and tap the first Start button (Working activity)
       final startButtons = find.widgetWithText(ElevatedButton, 'Start');
+      await tester.ensureVisible(startButtons.first);
+      await tester.pump(const Duration(milliseconds: 100));
       await tester.tap(startButtons.first);
       await tester.pump();
 
@@ -72,11 +74,16 @@ void main() {
 
       // Start an activity
       final startButtons = find.widgetWithText(ElevatedButton, 'Start');
+      await tester.ensureVisible(startButtons.first);
+      await tester.pump(const Duration(milliseconds: 100));
       await tester.tap(startButtons.first);
       await tester.pump();
 
       // Stop the activity
-      await tester.tap(find.text('Stop Activity'));
+      final stopButton = find.text('Stop Activity');
+      await tester.ensureVisible(stopButton);
+      await tester.pump(const Duration(milliseconds: 100));
+      await tester.tap(stopButton);
       await tester.pump();
 
       // Should show no activity message again

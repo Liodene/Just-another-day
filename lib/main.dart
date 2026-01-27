@@ -96,30 +96,39 @@ class _GameScreenState extends State<GameScreen>
       ),
       body: Padding(
         padding: const EdgeInsets.all(16.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            StatsCard(character: _character),
-            const SizedBox(height: 16),
-            ActivityProgressCard(
-              progress: _activityManager.currentProgress,
-              autoRepeat: _activityManager.autoRepeat,
-              onAutoRepeatChanged: (value) {
-                _activityManager.autoRepeat = value;
-              },
-              onStopActivity: _activityManager.stopActivity,
-            ),
-            const SizedBox(height: 16),
-            Expanded(
-              child: ActivitiesCard(
-                activities: _activityManager.getAllActivities(),
-                character: _character,
-                currentActivityId: _activityManager.currentActivity?.id,
-                hasActiveActivity: _activityManager.hasActiveActivity,
-                onStartActivity: _activityManager.startActivity,
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            return SingleChildScrollView(
+              child: ConstrainedBox(
+                constraints: BoxConstraints(
+                  minHeight: constraints.maxHeight,
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    StatsCard(character: _character),
+                    const SizedBox(height: 16),
+                    ActivityProgressCard(
+                      progress: _activityManager.currentProgress,
+                      autoRepeat: _activityManager.autoRepeat,
+                      onAutoRepeatChanged: (value) {
+                        _activityManager.autoRepeat = value;
+                      },
+                      onStopActivity: _activityManager.stopActivity,
+                    ),
+                    const SizedBox(height: 16),
+                    ActivitiesCard(
+                      activities: _activityManager.getAllActivities(),
+                      character: _character,
+                      currentActivityId: _activityManager.currentActivity?.id,
+                      hasActiveActivity: _activityManager.hasActiveActivity,
+                      onStartActivity: _activityManager.startActivity,
+                    ),
+                  ],
+                ),
               ),
-            ),
-          ],
+            );
+          },
         ),
       ),
     );
