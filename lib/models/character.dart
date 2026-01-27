@@ -134,7 +134,8 @@ class Character {
 
   /// Creates a [Character] instance from a JSON map.
   factory Character.fromJson(Map<String, dynamic> json) {
-    final completionsJson = json['activityCompletions'] as Map<String, dynamic>?;
+    final completionsJson =
+        json['activityCompletions'] as Map<String, dynamic>?;
     final completions = completionsJson?.map(
       (key, value) => MapEntry(key, (value as num).toInt()),
     );
