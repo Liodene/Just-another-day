@@ -1,0 +1,81 @@
+---
+description: Code quality standards for development workflow
+globs: **/*
+alwaysApply: true
+---
+
+# Code Quality Rules
+
+This project follows strict code quality standards. Always adhere to these rules when making changes.
+
+## Before Committing
+
+### 1. Run Tests
+
+Always run the test suite before committing any changes:
+
+```bash
+flutter test
+```
+
+All tests must pass before committing. If any test fails:
+- Fix the failing tests
+- Ensure your changes don't break existing functionality
+- Add new tests for new functionality
+
+### 2. Run Linter
+
+Always run the linter and fix any issues before committing:
+
+```bash
+# Check code formatting
+dart format --set-exit-if-changed --line-length 80 lib test
+
+# Run static analysis
+flutter analyze
+```
+
+If formatting issues are found, fix them with:
+```bash
+dart format --line-length 80 lib test
+```
+
+All linting rules must pass with zero warnings or errors.
+
+### 3. Pre-Commit Checklist
+
+Before every commit, verify:
+- [ ] All tests pass (`flutter test`)
+- [ ] Code is properly formatted (`dart format --set-exit-if-changed --line-length 80 lib test`)
+- [ ] Static analysis passes (`flutter analyze`)
+- [ ] No new warnings or errors introduced
+
+## After Pushing
+
+### Wait for CI to Complete
+
+Always wait for the CI pipeline to finish successfully before considering a task complete:
+
+1. Push your changes to the remote branch
+2. Monitor the GitHub Actions workflow status
+3. If CI fails:
+   - Review the failure logs
+   - Fix the issues locally
+   - Run tests and linter again
+   - Push the fixes
+4. Only mark the task as complete when CI passes
+
+The CI pipeline runs:
+- Code formatting check
+- Static analysis (181 linting rules)
+- Full test suite
+
+## Summary
+
+**Never commit without:**
+1. Running `flutter test` - all tests must pass
+2. Running `dart format --line-length 80 lib test` - code must be formatted
+3. Running `flutter analyze` - no analysis issues
+
+**Never finish a task without:**
+- Waiting for CI to complete successfully on GitHub
