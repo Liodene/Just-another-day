@@ -177,4 +177,73 @@ void main() {
       );
     });
   });
+
+  group('Character saved activity progress', () {
+    test('should return 0.0 for unsaved progress', () {
+      final character = Character(name: 'Test');
+
+      expect(character.getSavedProgress('working'), equals(0.0));
+      expect(character.getSavedProgress('studying'), equals(0.0));
+    });
+
+    test('should save and retrieve partial progress', () {
+      final character = Character(name: 'Test');
+
+      character.saveActivityProgress('working', 0.5);
+
+      expect(character.getSavedProgress('working'), equals(0.5));
+      expect(character.getSavedProgress('studying'), equals(0.0));
+    });
+
+    test('should not save zero progress', () {
+      final character = Character(name: 'Test');
+
+      character.saveActivityProgress('working', 0.0);
+
+      expect(character.savedActivityProgress.containsKey('working'), isFalse);
+    });
+
+    test('should not save complete progress (1.0)', () {
+      final character = Character(name: 'Test');
+
+      character.saveActivityProgress('working', 1.0);
+
+      expect(character.savedActivityProgress.containsKey('working'), isFalse);
+    });
+
+    test('should clear saved progress', () {
+      final character = Character(name: 'Test');
+
+      character.saveActivityProgress('working', 0.75);
+      expect(character.getSavedProgress('working'), equals(0.75));
+
+      character.clearSavedProgress('working');
+      expect(character.getSavedProgress('working'), equals(0.0));
+    });
+
+    test('should track multiple activities independently', () {
+      final character = Character(name: 'Test');
+
+      character.saveActivityProgress('working', 0.25);
+      character.saveActivityProgress('studying', 0.75);
+
+      expect(character.getSavedProgress('working'), equals(0.25));
+      expect(character.getSavedProgress('studying'), equals(0.75));
+
+      character.clearSavedProgress('working');
+
+      expect(character.getSavedProgress('working'), equals(0.0));
+      expect(character.getSavedProgress('studying'), equals(0.75));
+    });
+
+    test('should create with initial saved progress', () {
+      final character = Character(
+        name: 'Test',
+        savedActivityProgress: {'working': 0.5, 'studying': 0.3},
+      );
+
+      expect(character.getSavedProgress('working'), equals(0.5));
+      expect(character.getSavedProgress('studying'), equals(0.3));
+    });
+  });
 }

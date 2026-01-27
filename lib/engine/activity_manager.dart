@@ -78,9 +78,13 @@ class ActivityManager extends ChangeNotifier {
   /// Starts an activity.
   ///
   /// Returns true if the activity was started successfully.
-  /// Returns false if requirements are not met or another activity is running.
+  /// Returns false if requirements are not met or another activity is running
+  /// (unless force is true).
+  ///
+  /// When switching activities, partial progress is automatically saved and
+  /// will be restored when returning to the activity.
   bool startActivity(Activity activity, {bool force = false}) {
-    // Check if we can start
+    // Check if we can start (unless forcing)
     if (!force && hasActiveActivity) {
       return false;
     }
@@ -90,6 +94,12 @@ class ActivityManager extends ChangeNotifier {
       return false;
     }
 
+    // Save partial progress of current activity before switching
+    if (_currentProgress != null &&
+        _currentProgress!.activity.id != activity.id) {
+      _saveCurrentProgress();
+    }
+
     // Calculate duration based on character stats and activity-specific
     // difficulty coefficient
     final duration = activity.calculateDuration(
@@ -97,25 +107,53 @@ class ActivityManager extends ChangeNotifier {
       difficultyCoefficient: character.getDifficultyCoefficient(activity.id),
     );
 
+    // Check for saved progress and restore it
+    final savedProgress = character.getSavedProgress(activity.id);
+    final elapsedTime = savedProgress * duration;
+
     _currentProgress = ActivityProgress(
       activity: activity,
       totalDuration: duration,
+      elapsedTime: elapsedTime,
     );
+
+    // Clear saved progress since we've restored it
+    if (savedProgress > 0) {
+      character.clearSavedProgress(activity.id);
+    }
 
     _onProgressChanged?.call(_currentProgress);
     notifyListeners();
     return true;
   }
 
+  /// Saves the current activity's partial progress to the character.
+  void _saveCurrentProgress() {
+    if (_currentProgress != null && !_currentProgress!.isComplete) {
+      character.saveActivityProgress(
+        _currentProgress!.activity.id,
+        _currentProgress!.progress,
+      );
+    }
+  }
+
   /// Stops the current activity.
   ///
   /// If [grantPartialRewards] is true, grants a portion of the rewards
   /// based on progress.
-  void stopActivity({bool grantPartialRewards = false}) {
+  /// If [saveProgress] is true (default), saves the partial progress so it
+  /// can be resumed later.
+  void stopActivity(
+      {bool grantPartialRewards = false, bool saveProgress = true}) {
     if (_currentProgress == null) return;
 
     if (grantPartialRewards && _currentProgress!.progress > 0) {
       _applyRewards(_currentProgress!.activity, _currentProgress!.progress);
+    }
+
+    // Save partial progress before stopping (unless granting rewards)
+    if (saveProgress && !grantPartialRewards) {
+      _saveCurrentProgress();
     }
 
     _currentProgress = null;
@@ -164,6 +202,9 @@ class ActivityManager extends ChangeNotifier {
 
     // Increment this activity's completion count (increases its difficulty)
     character.addCompletion(activity.id);
+
+    // Clear any saved progress since activity completed
+    character.clearSavedProgress(activity.id);
 
     // Notify listeners
     _onActivityCompleted?.call(activity, activity.rewards);
