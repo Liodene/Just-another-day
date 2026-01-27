@@ -324,8 +324,105 @@ class ActivityManager extends ChangeNotifier {
   }
 
   /// Estimates the total in-game time for the current plan.
+  ///
+  /// This takes into account:
+  /// - Difficulty increasing with each completion (1.10x per completion)
+  /// - Stats improving from activity rewards after each completion
   double estimatePlanTime() {
-    return _planner.estimateTotalTime(calculateActivityDuration);
+    if (!_planner.hasPlannedActivities) return 0.0;
+
+    // Create simulated stats (copy of current stats)
+    final simStats = character.stats.copyWith();
+
+    // Track simulated completions per activity
+    final simCompletions = Map<String, int>.from(character.activityCompletions);
+
+    var totalTime = 0.0;
+
+    for (final planned in _planner.queue) {
+      if (planned.targetType == PlanTargetType.unlimited) {
+        return double.infinity;
+      }
+
+      final activity = planned.activity;
+      final activityId = activity.id;
+
+      switch (planned.targetType) {
+        case PlanTargetType.completions:
+          // Calculate time for each remaining completion
+          final remaining =
+              (planned.targetValue - planned.completedValue).toInt();
+          for (var i = 0; i < remaining; i++) {
+            // Calculate duration with current simulated state
+            final coefficient = _calculateCoefficient(
+              simCompletions[activityId] ?? 0,
+            );
+            final duration = activity.calculateDuration(
+              simStats,
+              difficultyCoefficient: coefficient,
+            );
+            totalTime += duration;
+
+            // Simulate completion: update stats and difficulty
+            _applySimulatedRewards(simStats, activity.rewards);
+            simCompletions[activityId] = (simCompletions[activityId] ?? 0) + 1;
+          }
+
+        case PlanTargetType.inGameTime:
+          // For time-based targets, estimate how many completions will occur
+          // and account for stats evolution during that time
+          var remainingTime = planned.targetValue - planned.completedValue;
+          while (remainingTime > 0) {
+            final coefficient = _calculateCoefficient(
+              simCompletions[activityId] ?? 0,
+            );
+            final duration = activity.calculateDuration(
+              simStats,
+              difficultyCoefficient: coefficient,
+            );
+
+            if (duration >= remainingTime) {
+              // Partial completion - just add remaining time
+              totalTime += remainingTime;
+              break;
+            }
+
+            // Full completion within the time budget
+            totalTime += duration;
+            remainingTime -= duration;
+
+            // Simulate completion: update stats and difficulty
+            _applySimulatedRewards(simStats, activity.rewards);
+            simCompletions[activityId] = (simCompletions[activityId] ?? 0) + 1;
+          }
+
+        case PlanTargetType.unlimited:
+          // Already handled above
+          break;
+      }
+    }
+
+    return totalTime;
+  }
+
+  /// Calculates difficulty coefficient for a given number of completions.
+  static double _calculateCoefficient(int completions) {
+    if (completions <= 0) return 1.0;
+    var result = 1.0;
+    for (var i = 0; i < completions; i++) {
+      result *= 1.10;
+    }
+    return result;
+  }
+
+  /// Applies rewards to simulated stats.
+  void _applySimulatedRewards(
+    CharacterStats stats,
+    Map<StatType, double> rewards,
+  ) {
+    for (final entry in rewards.entries) {
+      stats.addToStat(entry.key, entry.value);
+    }
   }
 
   void _applyRewards(Activity activity, double multiplier) {
