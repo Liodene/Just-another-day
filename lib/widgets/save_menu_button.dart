@@ -177,10 +177,7 @@ class SaveMenuButton extends StatelessWidget {
                   border: OutlineInputBorder(),
                   hintText: 'Paste JSON save data here...',
                 ),
-                style: const TextStyle(
-                  fontFamily: 'monospace',
-                  fontSize: 12,
-                ),
+                style: const TextStyle(fontFamily: 'monospace', fontSize: 12),
               ),
             ],
           ),

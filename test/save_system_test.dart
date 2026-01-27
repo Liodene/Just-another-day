@@ -125,10 +125,7 @@ void main() {
     test('round trip should preserve values', () {
       final original = Character(
         name: 'TestPlayer',
-        stats: CharacterStats(
-          strength: 5.5,
-          intelligence: 10.25,
-        ),
+        stats: CharacterStats(strength: 5.5, intelligence: 10.25),
         activityCompletions: {'working': 10, 'studying': 5},
       );
 
@@ -499,10 +496,7 @@ void main() {
     test('round trip should preserve all values', () {
       final character = Character(
         name: 'TestPlayer',
-        stats: CharacterStats(
-          strength: 5.5,
-          intelligence: 10.25,
-        ),
+        stats: CharacterStats(strength: 5.5, intelligence: 10.25),
         activityCompletions: {'working': 10, 'studying': 5},
       );
       final gameTime = GameTime(initialHour: 18, initialMinute: 45);

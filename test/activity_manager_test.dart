@@ -472,43 +472,45 @@ void main() {
       expect(activityManager.hasActiveActivity, isTrue);
     });
 
-    test('should stop current activity and move to next when removing first',
-        () {
-      // Add two activities to plan
-      activityManager.planner.addPlannedActivity(
-        PlannedActivity(
-          activity: Activities.working,
-          targetType: PlanTargetType.completions,
-          targetValue: 2,
-        ),
-      );
-      activityManager.planner.addPlannedActivity(
-        PlannedActivity(
-          activity: Activities.studying,
-          targetType: PlanTargetType.completions,
-          targetValue: 1,
-        ),
-      );
+    test(
+      'should stop current activity and move to next when removing first',
+      () {
+        // Add two activities to plan
+        activityManager.planner.addPlannedActivity(
+          PlannedActivity(
+            activity: Activities.working,
+            targetType: PlanTargetType.completions,
+            targetValue: 2,
+          ),
+        );
+        activityManager.planner.addPlannedActivity(
+          PlannedActivity(
+            activity: Activities.studying,
+            targetType: PlanTargetType.completions,
+            targetValue: 1,
+          ),
+        );
 
-      // Start the plan
-      activityManager.startPlan();
-      expect(activityManager.currentActivity?.id, equals('working'));
+        // Start the plan
+        activityManager.startPlan();
+        expect(activityManager.currentActivity?.id, equals('working'));
 
-      // Get some progress on working
-      tickerProvider.ticker!.advance(const Duration(milliseconds: 2000));
-      expect(activityManager.currentProgress!.progress, greaterThan(0));
+        // Get some progress on working
+        tickerProvider.ticker!.advance(const Duration(milliseconds: 2000));
+        expect(activityManager.currentProgress!.progress, greaterThan(0));
 
-      // Remove the current (first) activity
-      final removed = activityManager.removePlannedActivity(0);
+        // Remove the current (first) activity
+        final removed = activityManager.removePlannedActivity(0);
 
-      expect(removed?.activity.id, equals('working'));
-      expect(activityManager.planner.queue.length, equals(1));
-      // Should have moved to studying
-      expect(activityManager.currentActivity?.id, equals('studying'));
-      expect(activityManager.hasActiveActivity, isTrue);
-      // Progress should be saved for working
-      expect(character.getSavedProgress('working'), greaterThan(0));
-    });
+        expect(removed?.activity.id, equals('working'));
+        expect(activityManager.planner.queue.length, equals(1));
+        // Should have moved to studying
+        expect(activityManager.currentActivity?.id, equals('studying'));
+        expect(activityManager.hasActiveActivity, isTrue);
+        // Progress should be saved for working
+        expect(character.getSavedProgress('working'), greaterThan(0));
+      },
+    );
 
     test('should stop activity when removing only planned activity', () {
       // Add one activity to plan

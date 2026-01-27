@@ -30,10 +30,7 @@ class ActivitiesCard extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           mainAxisSize: MainAxisSize.min,
           children: [
-            Text(
-              'Activities',
-              style: Theme.of(context).textTheme.titleMedium,
-            ),
+            Text('Activities', style: Theme.of(context).textTheme.titleMedium),
             const SizedBox(height: 12),
             ListView.builder(
               shrinkWrap: true,

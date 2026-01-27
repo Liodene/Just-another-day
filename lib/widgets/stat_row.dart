@@ -21,10 +21,7 @@ class StatRow extends StatelessWidget {
       padding: const EdgeInsets.symmetric(vertical: 4.0),
       child: Row(
         children: [
-          SizedBox(
-            width: 100,
-            child: Text(name),
-          ),
+          SizedBox(width: 100, child: Text(name)),
           Expanded(
             child: LinearProgressIndicator(
               value: (value / maxValue).clamp(0.0, 1.0),
@@ -35,10 +32,7 @@ class StatRow extends StatelessWidget {
           const SizedBox(width: 8),
           SizedBox(
             width: 50,
-            child: Text(
-              value.toStringAsFixed(1),
-              textAlign: TextAlign.right,
-            ),
+            child: Text(value.toStringAsFixed(1), textAlign: TextAlign.right),
           ),
         ],
       ),

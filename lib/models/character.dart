@@ -114,13 +114,7 @@ class CharacterStats {
 }
 
 /// The types of character stats available.
-enum StatType {
-  strength,
-  intelligence,
-  endurance,
-  charisma,
-  agility,
-}
+enum StatType { strength, intelligence, endurance, charisma, agility }
 
 /// Represents a character in the game.
 class Character {
@@ -130,9 +124,9 @@ class Character {
     CharacterStats? stats,
     Map<String, int>? activityCompletions,
     Map<String, double>? savedActivityProgress,
-  })  : stats = stats ?? CharacterStats(),
-        _activityCompletions = activityCompletions ?? {},
-        _savedActivityProgress = savedActivityProgress ?? {};
+  }) : stats = stats ?? CharacterStats(),
+       _activityCompletions = activityCompletions ?? {},
+       _savedActivityProgress = savedActivityProgress ?? {};
 
   /// Creates a [Character] instance from a JSON map.
   factory Character.fromJson(Map<String, dynamic> json) {

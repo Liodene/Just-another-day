@@ -48,10 +48,7 @@ class ActivityProgressCard extends StatelessWidget {
         Row(
           children: [
             const Text('Auto-repeat'),
-            Switch(
-              value: autoRepeat,
-              onChanged: onAutoRepeatChanged,
-            ),
+            Switch(value: autoRepeat, onChanged: onAutoRepeatChanged),
           ],
         ),
       ],
@@ -74,17 +71,13 @@ class ActivityProgressCard extends StatelessWidget {
           style: Theme.of(context).textTheme.bodyLarge,
         ),
         const SizedBox(height: 8),
-        LinearProgressIndicator(
-          value: progress!.progress,
-        ),
+        LinearProgressIndicator(value: progress!.progress),
         const SizedBox(height: 4),
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
             Text('${(progress!.progress * 100).toStringAsFixed(1)}%'),
-            Text(
-              '${progress!.remainingTime.toStringAsFixed(1)}s remaining',
-            ),
+            Text('${progress!.remainingTime.toStringAsFixed(1)}s remaining'),
           ],
         ),
         const SizedBox(height: 8),

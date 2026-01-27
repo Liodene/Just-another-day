@@ -8,9 +8,9 @@ class GameTime {
     this.timeMultiplier = 300.0,
     int initialHour = 8,
     int initialMinute = 0,
-  })  : _inGameSeconds = (initialHour * 3600 + initialMinute * 60).toDouble(),
-        _dayCount = 1,
-        _realTimePlayedMs = 0.0;
+  }) : _inGameSeconds = (initialHour * 3600 + initialMinute * 60).toDouble(),
+       _dayCount = 1,
+       _realTimePlayedMs = 0.0;
 
   /// Creates a [GameTime] instance with direct internal state.
   GameTime._internal({
@@ -18,9 +18,9 @@ class GameTime {
     required double inGameSeconds,
     required int dayCount,
     required double realTimePlayedMs,
-  })  : _inGameSeconds = inGameSeconds,
-        _dayCount = dayCount,
-        _realTimePlayedMs = realTimePlayedMs;
+  }) : _inGameSeconds = inGameSeconds,
+       _dayCount = dayCount,
+       _realTimePlayedMs = realTimePlayedMs;
 
   /// Creates a [GameTime] instance from a JSON map.
   factory GameTime.fromJson(Map<String, dynamic> json) {

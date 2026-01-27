@@ -8,18 +8,15 @@ import 'activity_planner.dart';
 import 'game_loop.dart';
 
 /// Callback type for when an activity completes.
-typedef ActivityCompletedCallback = void Function(
-  Activity activity,
-  Map<StatType, double> rewards,
-);
+typedef ActivityCompletedCallback =
+    void Function(Activity activity, Map<StatType, double> rewards);
 
 /// Callback type for when activity progress changes.
 typedef ActivityProgressCallback = void Function(ActivityProgress? progress);
 
 /// Callback type for when a planned activity completes its target.
-typedef PlannedActivityCompletedCallback = void Function(
-  PlannedActivity planned,
-);
+typedef PlannedActivityCompletedCallback =
+    void Function(PlannedActivity planned);
 
 /// Manages activity progression and integrates with the game loop.
 ///
@@ -37,9 +34,9 @@ class ActivityManager extends ChangeNotifier {
     required GameLoop gameLoop,
     GameTime? gameTime,
     ActivityPlanner? planner,
-  })  : _gameLoop = gameLoop,
-        gameTime = gameTime ?? GameTime(),
-        _planner = planner ?? ActivityPlanner() {
+  }) : _gameLoop = gameLoop,
+       gameTime = gameTime ?? GameTime(),
+       _planner = planner ?? ActivityPlanner() {
     _removeCallback = _gameLoop.addCallback(_onGameLoopTick);
     _planner.addListener(_onPlannerChanged);
   }
@@ -258,8 +255,9 @@ class ActivityManager extends ChangeNotifier {
         // Continue with the same activity
         final duration = activity.calculateDuration(
           character.stats,
-          difficultyCoefficient:
-              character.getDifficultyCoefficient(activity.id),
+          difficultyCoefficient: character.getDifficultyCoefficient(
+            activity.id,
+          ),
         );
         _currentProgress = ActivityProgress(
           activity: activity,
@@ -269,8 +267,9 @@ class ActivityManager extends ChangeNotifier {
         // Auto-repeat without planner
         final duration = activity.calculateDuration(
           character.stats,
-          difficultyCoefficient:
-              character.getDifficultyCoefficient(activity.id),
+          difficultyCoefficient: character.getDifficultyCoefficient(
+            activity.id,
+          ),
         );
         _currentProgress = ActivityProgress(
           activity: activity,
@@ -326,7 +325,8 @@ class ActivityManager extends ChangeNotifier {
     if (index < 0 || index >= _planner.queue.length) return null;
 
     final isRemovingCurrent = index == 0;
-    final wasRunning = hasActiveActivity &&
+    final wasRunning =
+        hasActiveActivity &&
         isRemovingCurrent &&
         currentActivity?.id == _planner.currentPlanned?.activity.id;
 
@@ -383,8 +383,8 @@ class ActivityManager extends ChangeNotifier {
       switch (planned.targetType) {
         case PlanTargetType.completions:
           // Calculate time for each remaining completion
-          final remaining =
-              (planned.targetValue - planned.completedValue).toInt();
+          final remaining = (planned.targetValue - planned.completedValue)
+              .toInt();
           for (var i = 0; i < remaining; i++) {
             // Calculate duration with current simulated state
             final coefficient = _calculateCoefficient(

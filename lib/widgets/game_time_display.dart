@@ -4,20 +4,14 @@ import '../models/game_time.dart';
 
 /// Displays the in-game day count and time.
 class GameTimeDisplay extends StatelessWidget {
-  const GameTimeDisplay({
-    super.key,
-    required this.gameTime,
-  });
+  const GameTimeDisplay({super.key, required this.gameTime});
 
   final GameTime gameTime;
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.symmetric(
-        horizontal: 12,
-        vertical: 4,
-      ),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
       decoration: BoxDecoration(
         color: Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(8),
