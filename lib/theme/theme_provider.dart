@@ -79,9 +79,8 @@ class ThemeProvider extends ChangeNotifier {
       final themeName = prefs.getString(_themePreferenceKey);
 
       if (themeName != null) {
-        final theme = AppThemeType.values
-            .where((t) => t.name == themeName)
-            .firstOrNull;
+        final theme =
+            AppThemeType.values.where((t) => t.name == themeName).firstOrNull;
         if (theme != null) {
           _currentTheme = theme;
         }
