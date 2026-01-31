@@ -249,9 +249,9 @@ class ActivityManager extends ChangeNotifier {
 
   /// Handles the day expiration by stopping activities and pausing the loop.
   void _handleDayExpired() {
-    // Stop current activity
+    // Stop current activity without saving progress (day ended)
     if (_currentProgress != null) {
-      stopActivity(saveProgress: true);
+      stopActivity(saveProgress: false);
     }
 
     // Pause the game loop - no point running it while day is expired
