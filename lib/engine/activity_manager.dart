@@ -61,7 +61,6 @@ class ActivityManager extends ChangeNotifier {
   ActivityProgressCallback? _onProgressChanged;
   PlannedActivityCompletedCallback? _onPlannedActivityCompleted;
   DayExpiredCallback? _onDayExpired;
-  bool _dayExpiredNotified = false;
 
   /// Accumulated stat gains for the current day.
   /// These are applied when the day is reset via [startNewDay].
@@ -216,33 +215,13 @@ class ActivityManager extends ChangeNotifier {
   }
 
   void _onGameLoopTick(double deltaTimeMs) {
-    // Check if day just expired
-    if (gameTime.isExpired && !_dayExpiredNotified) {
-      _dayExpiredNotified = true;
-      // Stop current activity when day expires
-      if (_currentProgress != null) {
-        stopActivity(saveProgress: true);
-      }
-      _onDayExpired?.call(Map.from(_dailyGains));
-      notifyListeners();
-      return;
-    }
-
-    // Don't process activities if day is expired
-    if (gameTime.isExpired) {
-      return;
-    }
-
     // Only update game time when there's an active activity
     if (_currentProgress != null) {
       gameTime.update(deltaTimeMs);
 
-      // Check again if day just expired after time update
+      // Check if day just expired after time update
       if (gameTime.isExpired) {
-        _dayExpiredNotified = true;
-        stopActivity(saveProgress: true);
-        _onDayExpired?.call(Map.from(_dailyGains));
-        notifyListeners();
+        _handleDayExpired();
         return;
       }
 
@@ -265,6 +244,21 @@ class ActivityManager extends ChangeNotifier {
       }
     }
 
+    notifyListeners();
+  }
+
+  /// Handles the day expiration by stopping activities and pausing the loop.
+  void _handleDayExpired() {
+    // Stop current activity
+    if (_currentProgress != null) {
+      stopActivity(saveProgress: true);
+    }
+
+    // Pause the game loop - no point running it while day is expired
+    _gameLoop.pause();
+
+    // Notify listeners about day expiration
+    _onDayExpired?.call(Map.from(_dailyGains));
     notifyListeners();
   }
 
@@ -484,16 +478,11 @@ class ActivityManager extends ChangeNotifier {
     // Reset daily gains
     _dailyGains.clear();
 
-    // Reset the day expired notification flag
-    _dayExpiredNotified = false;
-
     // Start a new day in the game time
     gameTime.startNewDay();
 
-    // Stop any current activity
-    if (_currentProgress != null) {
-      stopActivity(saveProgress: true);
-    }
+    // Resume the game loop (it was paused when day expired)
+    _gameLoop.resume();
 
     notifyListeners();
   }
