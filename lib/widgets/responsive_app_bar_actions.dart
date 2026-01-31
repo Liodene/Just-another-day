@@ -106,9 +106,7 @@ class ResponsiveAppBarActions extends StatelessWidget {
                         : Icons.dark_mode,
                   ),
                   const SizedBox(width: 12),
-                  Text(
-                    themeProvider.isDarkTheme ? 'Light mode' : 'Dark mode',
-                  ),
+                  Text(themeProvider.isDarkTheme ? 'Light mode' : 'Dark mode'),
                 ],
               ),
             ),
@@ -160,10 +158,7 @@ class ResponsiveAppBarActions extends StatelessWidget {
                 children: [
                   Icon(Icons.delete_forever, color: Colors.red[700]),
                   const SizedBox(width: 12),
-                  Text(
-                    'Reset save',
-                    style: TextStyle(color: Colors.red[700]),
-                  ),
+                  Text('Reset save', style: TextStyle(color: Colors.red[700])),
                 ],
               ),
             ),
@@ -266,5 +261,4 @@ class ResponsiveAppBarActions extends StatelessWidget {
       ),
     );
   }
-
 }
