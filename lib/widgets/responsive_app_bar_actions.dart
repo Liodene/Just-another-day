@@ -18,6 +18,7 @@ class ResponsiveAppBarActions extends StatelessWidget {
     required this.themeProvider,
     required this.saveManager,
     required this.onImport,
+    required this.onReset,
     required this.isPaused,
     required this.onTogglePause,
   });
@@ -33,6 +34,9 @@ class ResponsiveAppBarActions extends StatelessWidget {
 
   /// Callback when a save is imported.
   final ValueChanged<GameSaveData> onImport;
+
+  /// Callback when the save is reset.
+  final VoidCallback onReset;
 
   /// Whether the game is paused.
   final bool isPaused;
@@ -58,7 +62,11 @@ class ResponsiveAppBarActions extends StatelessWidget {
             onThemeChanged: themeProvider.setTheme,
             onToggleDarkMode: themeProvider.toggleDarkMode,
           ),
-          SaveMenuButton(saveManager: saveManager, onImport: onImport),
+          SaveMenuButton(
+            saveManager: saveManager,
+            onImport: onImport,
+            onReset: onReset,
+          ),
           IconButton(
             icon: Icon(isPaused ? Icons.play_arrow : Icons.pause),
             onPressed: onTogglePause,
@@ -143,6 +151,17 @@ class ResponsiveAppBarActions extends StatelessWidget {
                 ],
               ),
             ),
+            const PopupMenuDivider(),
+            PopupMenuItem<String>(
+              value: 'reset',
+              child: Row(
+                children: [
+                  Icon(Icons.delete_forever, color: Colors.red[700]),
+                  const SizedBox(width: 12),
+                  Text('Reset save', style: TextStyle(color: Colors.red[700])),
+                ],
+              ),
+            ),
           ],
         ),
       ],
@@ -164,6 +183,8 @@ class ResponsiveAppBarActions extends StatelessWidget {
         _exportSave(context);
       case 'import':
         _showImportDialog(context);
+      case 'reset':
+        _showResetDialog(context);
     }
   }
 
@@ -302,5 +323,51 @@ class ResponsiveAppBarActions extends StatelessWidget {
         ],
       ),
     );
+  }
+
+  void _showResetDialog(BuildContext context) {
+    showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Row(
+          children: [
+            Icon(Icons.warning, color: Colors.red[700]),
+            const SizedBox(width: 8),
+            const Text('Reset Save'),
+          ],
+        ),
+        content: const Text(
+          'This will permanently delete all your progress and start a new game.\n\n'
+          'This action cannot be undone!\n\n'
+          'Are you sure you want to reset?',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            style: FilledButton.styleFrom(
+              backgroundColor: Colors.red[700],
+              foregroundColor: Colors.white,
+            ),
+            child: const Text('Reset'),
+          ),
+        ],
+      ),
+    ).then((confirm) {
+      if (confirm ?? false) {
+        onReset();
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Save reset successfully!'),
+              backgroundColor: Colors.orange,
+            ),
+          );
+        }
+      }
+    });
   }
 }

@@ -534,6 +534,9 @@ class ActivityManager extends ChangeNotifier {
     // Reset daily completions
     _dailyCompletions.clear();
 
+    // Reset activity difficulty (completions used for difficulty coefficient)
+    character.resetCompletions();
+
     // Start a new day in the game time
     gameTime.startNewDay();
 

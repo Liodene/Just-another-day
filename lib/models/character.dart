@@ -204,6 +204,11 @@ class Character {
         (_activityCompletions[activityId] ?? 0) + 1;
   }
 
+  /// Resets all activity completions (difficulty resets at day start).
+  void resetCompletions() {
+    _activityCompletions.clear();
+  }
+
   /// Saves partial progress for an activity.
   void saveActivityProgress(String activityId, double progress) {
     if (progress > 0 && progress < 1.0) {

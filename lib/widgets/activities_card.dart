@@ -13,6 +13,7 @@ class ActivitiesCard extends StatelessWidget {
     required this.currentActivityId,
     required this.hasActiveActivity,
     required this.onStartActivity,
+    this.dailyCompletions = const {},
   });
 
   final List<Activity> activities;
@@ -20,6 +21,9 @@ class ActivitiesCard extends StatelessWidget {
   final String? currentActivityId;
   final bool hasActiveActivity;
   final void Function(Activity activity) onStartActivity;
+
+  /// Daily completions per activity ID.
+  final Map<String, int> dailyCompletions;
 
   @override
   Widget build(BuildContext context) {
@@ -44,6 +48,8 @@ class ActivitiesCard extends StatelessWidget {
                   isCurrentActivity: currentActivityId == activity.id,
                   canStart: !hasActiveActivity,
                   onStart: () => onStartActivity(activity),
+                  dailyCompletions: dailyCompletions[activity.id] ?? 0,
+                  maxCompletions: character.getCompletionRecord(activity.id),
                 );
               },
             ),

@@ -168,6 +168,30 @@ class _GameScreenState extends State<GameScreen>
     );
   }
 
+  void _handleReset() {
+    // Stop any running activity
+    _activityManager.stopActivity();
+
+    // Reset character to default state
+    _character.restoreFrom(Character(name: 'Player'));
+
+    // Reset game time
+    _gameTime.reset();
+
+    // Clear daily completions
+    _activityManager.clearDailyCompletions();
+
+    // Delete saved data
+    _saveManager.deleteSave();
+
+    // Resume game loop if paused
+    if (_gameLoop.isPaused) {
+      _gameLoop.resume();
+    }
+
+    setState(() {});
+  }
+
   @override
   void dispose() {
     _activityManager.removeListener(_onActivityManagerChanged);
@@ -199,6 +223,7 @@ class _GameScreenState extends State<GameScreen>
             themeProvider: widget.themeProvider,
             saveManager: _saveManager,
             onImport: _handleImport,
+            onReset: _handleReset,
             isPaused: _gameLoop.isPaused,
             onTogglePause: _togglePause,
           ),
@@ -237,6 +262,7 @@ class _GameScreenState extends State<GameScreen>
                       character: _character,
                       currentActivityId: _activityManager.currentActivity?.id,
                       hasActiveActivity: _activityManager.hasActiveActivity,
+                      dailyCompletions: _activityManager.dailyCompletions,
                       onStartActivity: _handleStartActivity,
                     ),
                   ],

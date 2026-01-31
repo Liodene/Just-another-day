@@ -4,6 +4,7 @@ import '../engine/activity_manager.dart';
 import '../engine/activity_planner.dart';
 import '../models/activity.dart';
 import '../models/character.dart';
+import '../models/game_time.dart';
 import '../models/planned_activity.dart';
 
 /// Displays the activity planner with queued activities.
@@ -22,6 +23,7 @@ class ActivityPlannerCard extends StatelessWidget {
   final VoidCallback onCancelPlan;
 
   ActivityPlanner get planner => activityManager.planner;
+  GameTime get gameTime => activityManager.gameTime;
 
   @override
   Widget build(BuildContext context) {
@@ -61,18 +63,54 @@ class ActivityPlannerCard extends StatelessWidget {
         ? _formatDuration(estimatedTime)
         : 'Unlimited';
 
-    return Row(
+    // Calculate remaining time in the day
+    final remainingTime = GameTime.maxDaySeconds - gameTime.inGameSeconds;
+    final exceedsDay = estimatedTime.isFinite && estimatedTime > remainingTime;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Icon(
-          Icons.schedule,
-          size: 16,
-          color: Theme.of(context).colorScheme.primary,
+        Row(
+          children: [
+            Icon(
+              Icons.schedule,
+              size: 16,
+              color: Theme.of(context).colorScheme.primary,
+            ),
+            const SizedBox(width: 4),
+            Text(
+              'Estimated time: $timeText',
+              style: Theme.of(context).textTheme.bodySmall,
+            ),
+          ],
         ),
-        const SizedBox(width: 4),
-        Text(
-          'Estimated time: $timeText',
-          style: Theme.of(context).textTheme.bodySmall,
-        ),
+        if (exceedsDay) ...[
+          const SizedBox(height: 8),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+            decoration: BoxDecoration(
+              color: Colors.orange.withValues(alpha: 0.15),
+              borderRadius: BorderRadius.circular(6),
+              border: Border.all(color: Colors.orange, width: 1),
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(Icons.warning_amber, size: 16, color: Colors.orange[800]),
+                const SizedBox(width: 6),
+                Flexible(
+                  child: Text(
+                    'Plan exceeds remaining day time '
+                    '(${_formatDuration(remainingTime)} left)',
+                    style: Theme.of(
+                      context,
+                    ).textTheme.bodySmall?.copyWith(color: Colors.orange[900]),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
       ],
     );
   }
