@@ -48,29 +48,66 @@ void main() {
       expect(gameTime.realTimePlayedMinutes, equals(1.0));
     });
 
-    test('should handle day rollover', () {
+    test('should stop at 24:00 instead of rolling over', () {
       // Start at 23:55
       final gameTime = GameTime(initialHour: 23, initialMinute: 55);
       expect(gameTime.dayCount, equals(1));
+      expect(gameTime.isExpired, isFalse);
 
       // Advance 2 real seconds = 600 game seconds = 10 game minutes
-      // 23:55 + 10 minutes = 00:05 next day
+      // 23:55 + 10 minutes would be 00:05, but should stop at 24:00
       gameTime.update(2000);
 
-      expect(gameTime.dayCount, equals(2));
-      expect(gameTime.hour, equals(0));
-      expect(gameTime.minute, equals(5));
+      expect(gameTime.dayCount, equals(1)); // Day doesn't change automatically
+      expect(gameTime.isExpired, isTrue);
+      expect(gameTime.hour, equals(24));
+      expect(gameTime.minute, equals(0));
     });
 
-    test('should handle multiple day rollovers', () {
-      final gameTime = GameTime(initialHour: 0, initialMinute: 0);
+    test('should not update time after day expires', () {
+      // Start at 23:59
+      final gameTime = GameTime(initialHour: 23, initialMinute: 59);
 
-      // 1 game day = 86400 game seconds
-      // At 300x, 1 game day = 288 real seconds
-      // Advance 576 real seconds = 2 game days
-      gameTime.update(576000); // 576 seconds in ms
+      // Advance to 24:00
+      gameTime.update(1000); // 5 game minutes
 
-      expect(gameTime.dayCount, equals(3)); // Started at day 1, +2 days
+      expect(gameTime.isExpired, isTrue);
+      final realTimeBeforeExpiry = gameTime.realTimePlayedMs;
+
+      // Try to update more - should be ignored
+      gameTime.update(10000);
+
+      // Real time should not have been tracked after expiry
+      expect(gameTime.realTimePlayedMs, equals(realTimeBeforeExpiry));
+      expect(gameTime.isExpired, isTrue);
+    });
+
+    test('startNewDay should reset time and increment day count', () {
+      // Start at 23:55 and expire
+      final gameTime = GameTime(initialHour: 23, initialMinute: 55);
+      gameTime.update(2000); // Expire the day
+      expect(gameTime.isExpired, isTrue);
+      expect(gameTime.dayCount, equals(1));
+
+      // Start a new day
+      gameTime.startNewDay();
+
+      expect(gameTime.isExpired, isFalse);
+      expect(gameTime.dayCount, equals(2));
+      expect(gameTime.hour, equals(8)); // Default initial hour
+      expect(gameTime.minute, equals(0));
+    });
+
+    test('startNewDay with custom time should work', () {
+      final gameTime = GameTime(initialHour: 23, initialMinute: 55);
+      gameTime.update(2000); // Expire
+      expect(gameTime.isExpired, isTrue);
+
+      gameTime.startNewDay(initialHour: 6, initialMinute: 30);
+
+      expect(gameTime.isExpired, isFalse);
+      expect(gameTime.hour, equals(6));
+      expect(gameTime.minute, equals(30));
     });
 
     test('should reset correctly', () {

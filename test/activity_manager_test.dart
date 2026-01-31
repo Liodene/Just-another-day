@@ -5,6 +5,7 @@ import 'package:just_another_day/engine/activity_manager.dart';
 import 'package:just_another_day/engine/game_loop.dart';
 import 'package:just_another_day/models/activity.dart';
 import 'package:just_another_day/models/character.dart';
+import 'package:just_another_day/models/game_time.dart';
 import 'package:just_another_day/models/planned_activity.dart';
 
 /// A fake ticker for testing that allows manual time control.
@@ -309,10 +310,10 @@ void main() {
       gameLoop.dispose();
     });
 
-    test('should account for difficulty and stats evolution in estimation', () {
+    test('should account for difficulty increase in estimation', () {
       // Add 3 completions of working
       // Working: baseDuration=10, difficulty=0.5, primary=endurance
-      // Working rewards: endurance +0.1, charisma +0.05
+      // Stats don't evolve during the day anymore, only difficulty increases
       final planned = PlannedActivity(
         activity: Activities.working,
         targetType: PlanTargetType.completions,
@@ -321,16 +322,13 @@ void main() {
 
       activityManager.planner.addPlannedActivity(planned);
 
-      // With endurance=1.0:
-      // Completion 1: coef=1.0, end=1.0, dur = 10 * (0.5*1.0/1.0) = 5.0s
-      //   After: endurance = 1.1, completions = 1
-      // Completion 2: coef=1.1, end=1.1, dur = 10 * (0.5*1.1/1.1) = 5.0s
-      //   After: endurance = 1.2, completions = 2
-      // Completion 3: coef=1.21, end=1.2, dur = 10 * (0.5*1.21/1.2) = 5.04s
-      // Total = 5.0 + 5.0 + 5.04 = 15.04s
-      // Note: difficulty increase and stat increase roughly cancel out early on
+      // With endurance=1.0, stats fixed during day:
+      // Completion 1: coef=1.0, dur = 10 * (0.5*1.0/1.0) = 5.0s
+      // Completion 2: coef=1.1, dur = 10 * (0.5*1.1/1.0) = 5.5s
+      // Completion 3: coef=1.21, dur = 10 * (0.5*1.21/1.0) = 6.05s
+      // Total = 5.0 + 5.5 + 6.05 = 16.55s
       final estimate = activityManager.estimatePlanTime();
-      expect(estimate, closeTo(15.04, 0.1));
+      expect(estimate, closeTo(16.55, 0.1));
     });
 
     test('should handle existing completions in estimation', () {
@@ -349,13 +347,12 @@ void main() {
 
       // With endurance=1.0, existing completions=2:
       // Completion 1: coef=1.21, dur = 10 * (0.5*1.21/1.0) = 6.05s
-      //   After: endurance = 1.1, completions = 3
-      // Completion 2: coef=1.331, end=1.1, dur = 10 * (0.5*1.331/1.1) = 6.05s
+      // Completion 2: coef=1.331, dur = 10 * (0.5*1.331/1.0) = 6.655s
       final estimate = activityManager.estimatePlanTime();
-      expect(estimate, closeTo(12.1, 0.2));
+      expect(estimate, closeTo(12.7, 0.2));
     });
 
-    test('should estimate time-based targets with evolving stats', () {
+    test('should estimate time-based targets simply', () {
       final planned = PlannedActivity(
         activity: Activities.working,
         targetType: PlanTargetType.inGameTime,
@@ -364,16 +361,13 @@ void main() {
 
       activityManager.planner.addPlannedActivity(planned);
 
-      // Should account for completions happening within the time window
-      // and update stats/difficulty accordingly
+      // For time-based targets, the estimate is simply the target time
+      // (simplified since stats don't evolve during the day)
       final estimate = activityManager.estimatePlanTime();
-
-      // First completion takes 5s, second takes ~5s (stats offset difficulty)
-      // Third completion starts but only partial time remains
-      expect(estimate, equals(15)); // Time-based should equal target time
+      expect(estimate, equals(15));
     });
 
-    test('should handle multiple planned activities with evolution', () {
+    test('should handle multiple planned activities', () {
       // First: 2 completions of working
       final planned1 = PlannedActivity(
         activity: Activities.working,
@@ -393,9 +387,7 @@ void main() {
 
       final estimate = activityManager.estimatePlanTime();
 
-      // Working improves endurance, studying uses intelligence
-      // Stats from working don't directly help studying
-      // But the estimation should still be reasonable
+      // Estimation only considers difficulty increases, not stat changes
       expect(estimate, greaterThan(0));
       expect(estimate.isFinite, isTrue);
     });
@@ -581,6 +573,208 @@ void main() {
       expect(activityManager.planner.currentPlanned?.activity.id, 'studying');
       // Still no active activity
       expect(activityManager.hasActiveActivity, isFalse);
+    });
+  });
+
+  group('ActivityManager daily gains and day expiration', () {
+    late FakeTickerProvider tickerProvider;
+    late GameLoop gameLoop;
+    late Character character;
+    late ActivityManager activityManager;
+
+    setUp(() {
+      tickerProvider = FakeTickerProvider();
+      gameLoop = GameLoop(vsync: tickerProvider);
+      character = Character(name: 'TestPlayer');
+      activityManager = ActivityManager(
+        character: character,
+        gameLoop: gameLoop,
+      );
+      gameLoop.start();
+    });
+
+    tearDown(() {
+      activityManager.dispose();
+      gameLoop.dispose();
+    });
+
+    test('should track daily completions instead of applying immediately', () {
+      // Initial stats
+      final initialEndurance = character.stats.endurance;
+
+      // Start working activity and complete it
+      activityManager.startActivity(Activities.working, force: true);
+
+      // Working: duration = 5 seconds = 5000ms
+      tickerProvider.ticker!.advance(const Duration(milliseconds: 5000));
+
+      // Stats should NOT have changed yet
+      expect(character.stats.endurance, equals(initialEndurance));
+
+      // But daily completions should be tracked
+      expect(activityManager.dailyCompletions['working'], equals(1));
+
+      // And daily gains should show the expected gains
+      expect(activityManager.dailyGains.isNotEmpty, isTrue);
+      expect(activityManager.dailyGains[StatType.endurance], greaterThan(0));
+    });
+
+    test('startNewDay should apply gains only for new levels above record', () {
+      final initialEndurance = character.stats.endurance;
+
+      // Enable auto-repeat to complete multiple times
+      activityManager.autoRepeat = true;
+      activityManager.startActivity(Activities.working, force: true);
+
+      // Working: duration starts at ~5s, increases with each completion
+      // Advance in small increments to allow multiple completions
+      // Complete 3 times (need ~17s total with increasing difficulty)
+      for (var i = 0; i < 20; i++) {
+        tickerProvider.ticker!.advance(const Duration(milliseconds: 1000));
+      }
+
+      expect(activityManager.dailyCompletions['working'], equals(3));
+
+      // Get the expected gains (3 new levels, since record is 0)
+      final expectedGains = activityManager.dailyGains;
+      expect(expectedGains[StatType.endurance], greaterThan(0));
+
+      // Start a new day
+      activityManager.startNewDay();
+
+      // Stats should now be applied
+      expect(character.stats.endurance, greaterThan(initialEndurance));
+
+      // Record should be updated
+      expect(character.getCompletionRecord('working'), equals(3));
+
+      // Daily completions should be cleared
+      expect(activityManager.dailyCompletions.isEmpty, isTrue);
+    });
+
+    test('should not gain stats if completions are below record', () {
+      // Set a pre-existing record of 5 completions
+      character.updateCompletionRecord('working', 5);
+      final initialEndurance = character.stats.endurance;
+
+      // Enable auto-repeat
+      activityManager.autoRepeat = true;
+      activityManager.startActivity(Activities.working, force: true);
+
+      // Complete activity only 3 times (below record of 5)
+      for (var i = 0; i < 20; i++) {
+        tickerProvider.ticker!.advance(const Duration(milliseconds: 1000));
+      }
+
+      expect(activityManager.dailyCompletions['working'], equals(3));
+
+      // Daily gains should be empty (3 < 5 record)
+      expect(activityManager.dailyGains.isEmpty, isTrue);
+
+      // Start a new day
+      activityManager.startNewDay();
+
+      // Stats should NOT have changed
+      expect(character.stats.endurance, equals(initialEndurance));
+
+      // Record should still be 5
+      expect(character.getCompletionRecord('working'), equals(5));
+    });
+
+    test('should only gain stats for levels above record', () {
+      // Set a pre-existing record of 2 completions
+      character.updateCompletionRecord('working', 2);
+      final initialEndurance = character.stats.endurance;
+
+      // Enable auto-repeat
+      activityManager.autoRepeat = true;
+      activityManager.startActivity(Activities.working, force: true);
+
+      // Complete activity 5 times (3 above record)
+      // Each completion takes longer due to difficulty increase
+      for (var i = 0; i < 40; i++) {
+        tickerProvider.ticker!.advance(const Duration(milliseconds: 1000));
+      }
+
+      expect(activityManager.dailyCompletions['working'], equals(5));
+
+      // Daily gains should be for 3 new levels (5 - 2 = 3)
+      final workingRewards = Activities.working.rewards;
+      final expectedEndurance = (workingRewards[StatType.endurance] ?? 0) * 3;
+      expect(
+        activityManager.dailyGains[StatType.endurance],
+        closeTo(expectedEndurance, 0.001),
+      );
+
+      // Start a new day
+      activityManager.startNewDay();
+
+      // Stats should have increased by 3x the reward
+      expect(
+        character.stats.endurance,
+        closeTo(initialEndurance + expectedEndurance, 0.001),
+      );
+
+      // Record should be updated to 5
+      expect(character.getCompletionRecord('working'), equals(5));
+    });
+
+    test('should stop activity and trigger callback when day expires', () {
+      // Start at 23:59 with very fast time multiplier
+      final gameTime = GameTime(
+        initialHour: 23,
+        initialMinute: 59,
+        timeMultiplier: 3000.0, // 10x faster
+      );
+      activityManager = ActivityManager(
+        character: character,
+        gameLoop: gameLoop,
+        gameTime: gameTime,
+      );
+
+      bool dayExpiredCalled = false;
+      Map<StatType, double>? receivedGains;
+
+      activityManager.onDayExpired = (gains) {
+        dayExpiredCalled = true;
+        receivedGains = gains;
+      };
+
+      // Start an activity
+      activityManager.startActivity(Activities.working, force: true);
+      expect(activityManager.hasActiveActivity, isTrue);
+
+      // Advance time to expire the day
+      // 1 minute = 60 seconds, at 3000x that's 60/3000 = 0.02 real seconds = 20ms
+      tickerProvider.ticker!.advance(const Duration(milliseconds: 100));
+
+      // Day should be expired
+      expect(gameTime.isExpired, isTrue);
+      expect(dayExpiredCalled, isTrue);
+      expect(receivedGains, isNotNull);
+      // Activity should be stopped
+      expect(activityManager.hasActiveActivity, isFalse);
+    });
+
+    test('should not process activities after day expires', () {
+      // Create game time already expired
+      final gameTime = GameTime(initialHour: 23, initialMinute: 59);
+      gameTime.update(1000); // Expire the day
+
+      activityManager = ActivityManager(
+        character: character,
+        gameLoop: gameLoop,
+        gameTime: gameTime,
+      );
+
+      // Try to start an activity
+      activityManager.startActivity(Activities.working, force: true);
+
+      // Advance time - should not process
+      tickerProvider.ticker!.advance(const Duration(milliseconds: 5000));
+
+      // No completions should be recorded
+      expect(activityManager.dailyCompletions.isEmpty, isTrue);
     });
   });
 }

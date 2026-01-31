@@ -2,6 +2,8 @@
 ///
 /// The in-game clock runs at [timeMultiplier] speed relative to real time.
 /// By default, 1 real second = 300 in-game seconds (5 in-game minutes).
+/// Time stops at 24:00 (86400 seconds) and must be manually reset via
+/// [startNewDay] to continue.
 class GameTime {
   /// Creates a new [GameTime] instance.
   GameTime({
@@ -55,14 +57,20 @@ class GameTime {
   /// Total real time played in milliseconds (not displayed).
   double _realTimePlayedMs;
 
-  /// Current in-game hour (0-23).
-  int get hour => (_inGameSeconds ~/ 3600) % 24;
+  /// The maximum in-game seconds in a day (24:00 = 86400 seconds).
+  static const double maxDaySeconds = 86400.0;
 
-  /// Current in-game minute (0-59).
-  int get minute => (_inGameSeconds ~/ 60).toInt() % 60;
+  /// Current in-game hour (0-24). Returns 24 when day is expired.
+  int get hour => isExpired ? 24 : (_inGameSeconds ~/ 3600) % 24;
 
-  /// Current in-game second (0-59).
-  int get second => _inGameSeconds.toInt() % 60;
+  /// Current in-game minute (0-59). Returns 0 when day is expired.
+  int get minute => isExpired ? 0 : (_inGameSeconds ~/ 60).toInt() % 60;
+
+  /// Current in-game second (0-59). Returns 0 when day is expired.
+  int get second => isExpired ? 0 : _inGameSeconds.toInt() % 60;
+
+  /// Whether the day has expired (reached 24:00).
+  bool get isExpired => _inGameSeconds >= maxDaySeconds;
 
   /// Current day count since game start.
   int get dayCount => _dayCount;
@@ -97,7 +105,12 @@ class GameTime {
   /// Updates the game time based on real time elapsed.
   ///
   /// [realDeltaTimeMs] is the real time elapsed in milliseconds.
+  /// Time will stop at 24:00 (86400 seconds) and will not roll over.
+  /// Use [startNewDay] to advance to the next day.
   void update(double realDeltaTimeMs) {
+    // Don't update if day is already expired
+    if (isExpired) return;
+
     // Track real time played
     _realTimePlayedMs += realDeltaTimeMs;
 
@@ -105,11 +118,19 @@ class GameTime {
     final inGameDeltaSeconds = (realDeltaTimeMs / 1000.0) * timeMultiplier;
     _inGameSeconds += inGameDeltaSeconds;
 
-    // Handle day rollover
-    while (_inGameSeconds >= 86400) {
-      _inGameSeconds -= 86400;
-      _dayCount++;
+    // Cap at 24:00 instead of rolling over
+    if (_inGameSeconds >= maxDaySeconds) {
+      _inGameSeconds = maxDaySeconds;
     }
+  }
+
+  /// Starts a new day, resetting the time to the initial hour.
+  ///
+  /// This increments the day count and resets the in-game time.
+  /// Should be called after the day end modal is dismissed.
+  void startNewDay({int initialHour = 8, int initialMinute = 0}) {
+    _inGameSeconds = (initialHour * 3600 + initialMinute * 60).toDouble();
+    _dayCount++;
   }
 
   /// Resets the game time to the initial state.

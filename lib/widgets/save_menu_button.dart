@@ -3,57 +3,19 @@ import 'package:flutter/services.dart';
 
 import '../engine/save_manager.dart';
 
-/// A menu button that provides save, export, and import functionality.
-class SaveMenuButton extends StatelessWidget {
-  /// Creates a new [SaveMenuButton].
-  const SaveMenuButton({
+/// Shared actions for save, export, import, and reset dialogs.
+class SaveMenuActions {
+  const SaveMenuActions({
     required this.saveManager,
     required this.onImport,
-    super.key,
+    required this.onReset,
   });
 
-  /// The save manager instance.
   final SaveManager saveManager;
-
-  /// Callback when a save is imported successfully.
   final void Function(GameSaveData) onImport;
+  final VoidCallback onReset;
 
-  @override
-  Widget build(BuildContext context) {
-    return PopupMenuButton<String>(
-      icon: const Icon(Icons.save),
-      tooltip: 'Save Menu',
-      onSelected: (value) => _handleMenuSelection(context, value),
-      itemBuilder: (context) => [
-        const PopupMenuItem<String>(
-          value: 'save',
-          child: ListTile(
-            leading: Icon(Icons.save),
-            title: Text('Save Game'),
-            contentPadding: EdgeInsets.zero,
-          ),
-        ),
-        const PopupMenuItem<String>(
-          value: 'export',
-          child: ListTile(
-            leading: Icon(Icons.upload),
-            title: Text('Export Save'),
-            contentPadding: EdgeInsets.zero,
-          ),
-        ),
-        const PopupMenuItem<String>(
-          value: 'import',
-          child: ListTile(
-            leading: Icon(Icons.download),
-            title: Text('Import Save'),
-            contentPadding: EdgeInsets.zero,
-          ),
-        ),
-      ],
-    );
-  }
-
-  Future<void> _handleMenuSelection(BuildContext context, String value) async {
+  Future<void> handleSelection(BuildContext context, String value) async {
     switch (value) {
       case 'save':
         await _handleSave(context);
@@ -61,6 +23,8 @@ class SaveMenuButton extends StatelessWidget {
         await _handleExport(context);
       case 'import':
         await _handleImport(context);
+      case 'reset':
+        await _handleReset(context);
     }
   }
 
@@ -257,5 +221,121 @@ class SaveMenuButton extends StatelessWidget {
         );
       }
     }
+  }
+
+  Future<void> _handleReset(BuildContext context) async {
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Row(
+          children: [
+            Icon(Icons.warning, color: Colors.red[700]),
+            const SizedBox(width: 8),
+            const Text('Reset Save'),
+          ],
+        ),
+        content: const Text(
+          'This will permanently delete all your progress and start a new game.\n\n'
+          'This action cannot be undone!\n\n'
+          'Are you sure you want to reset?',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            style: FilledButton.styleFrom(
+              backgroundColor: Colors.red[700],
+              foregroundColor: Colors.white,
+            ),
+            child: const Text('Reset'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirm ?? false) {
+      onReset();
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Save reset successfully!'),
+            backgroundColor: Colors.orange,
+          ),
+        );
+      }
+    }
+  }
+}
+
+/// A menu button that provides save, export, import, and reset functionality.
+class SaveMenuButton extends StatelessWidget {
+  /// Creates a new [SaveMenuButton].
+  const SaveMenuButton({
+    required this.saveManager,
+    required this.onImport,
+    required this.onReset,
+    super.key,
+  });
+
+  /// The save manager instance.
+  final SaveManager saveManager;
+
+  /// Callback when a save is imported successfully.
+  final void Function(GameSaveData) onImport;
+
+  /// Callback when the save is reset.
+  final VoidCallback onReset;
+
+  @override
+  Widget build(BuildContext context) {
+    final actions = SaveMenuActions(
+      saveManager: saveManager,
+      onImport: onImport,
+      onReset: onReset,
+    );
+
+    return PopupMenuButton<String>(
+      icon: const Icon(Icons.save),
+      tooltip: 'Save Menu',
+      onSelected: (value) => actions.handleSelection(context, value),
+      itemBuilder: (context) => [
+        const PopupMenuItem<String>(
+          value: 'save',
+          child: ListTile(
+            leading: Icon(Icons.save),
+            title: Text('Save Game'),
+            contentPadding: EdgeInsets.zero,
+          ),
+        ),
+        const PopupMenuItem<String>(
+          value: 'export',
+          child: ListTile(
+            leading: Icon(Icons.upload),
+            title: Text('Export Save'),
+            contentPadding: EdgeInsets.zero,
+          ),
+        ),
+        const PopupMenuItem<String>(
+          value: 'import',
+          child: ListTile(
+            leading: Icon(Icons.download),
+            title: Text('Import Save'),
+            contentPadding: EdgeInsets.zero,
+          ),
+        ),
+        const PopupMenuDivider(),
+        PopupMenuItem<String>(
+          value: 'reset',
+          child: ListTile(
+            leading: Icon(Icons.delete_forever, color: Colors.red[700]),
+            title: Text('Reset Save', style: TextStyle(color: Colors.red[700])),
+            contentPadding: EdgeInsets.zero,
+          ),
+        ),
+      ],
+    );
   }
 }

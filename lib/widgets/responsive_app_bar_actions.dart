@@ -18,6 +18,7 @@ class ResponsiveAppBarActions extends StatelessWidget {
     required this.themeProvider,
     required this.saveManager,
     required this.onImport,
+    required this.onReset,
     required this.isPaused,
     required this.onTogglePause,
   });
@@ -33,6 +34,9 @@ class ResponsiveAppBarActions extends StatelessWidget {
 
   /// Callback when a save is imported.
   final ValueChanged<GameSaveData> onImport;
+
+  /// Callback when the save is reset.
+  final VoidCallback onReset;
 
   /// Whether the game is paused.
   final bool isPaused;
@@ -58,7 +62,11 @@ class ResponsiveAppBarActions extends StatelessWidget {
             onThemeChanged: themeProvider.setTheme,
             onToggleDarkMode: themeProvider.toggleDarkMode,
           ),
-          SaveMenuButton(saveManager: saveManager, onImport: onImport),
+          SaveMenuButton(
+            saveManager: saveManager,
+            onImport: onImport,
+            onReset: onReset,
+          ),
           IconButton(
             icon: Icon(isPaused ? Icons.play_arrow : Icons.pause),
             onPressed: onTogglePause,
@@ -143,32 +151,48 @@ class ResponsiveAppBarActions extends StatelessWidget {
                 ],
               ),
             ),
+            const PopupMenuDivider(),
+            PopupMenuItem<String>(
+              value: 'reset',
+              child: Row(
+                children: [
+                  Icon(Icons.delete_forever, color: Colors.red[700]),
+                  const SizedBox(width: 12),
+                  Text('Reset save', style: TextStyle(color: Colors.red[700])),
+                ],
+              ),
+            ),
           ],
         ),
       ],
     );
   }
 
-  void _handleMenuSelection(BuildContext context, String value) {
+  Future<void> _handleMenuSelection(BuildContext context, String value) async {
+    final saveActions = SaveMenuActions(
+      saveManager: saveManager,
+      onImport: onImport,
+      onReset: onReset,
+    );
+
     switch (value) {
       case 'toggle_dark_mode':
-        themeProvider.toggleDarkMode();
+        await themeProvider.toggleDarkMode();
+        return;
       case 'theme':
-        _showThemeDialog(context);
+        await _showThemeDialog(context);
+        return;
       case 'save':
-        saveManager.save();
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(const SnackBar(content: Text('Game saved')));
       case 'export':
-        _exportSave(context);
       case 'import':
-        _showImportDialog(context);
+      case 'reset':
+        await saveActions.handleSelection(context, value);
+        return;
     }
   }
 
-  void _showThemeDialog(BuildContext context) {
-    showDialog<void>(
+  Future<void> _showThemeDialog(BuildContext context) {
+    return showDialog<void>(
       context: context,
       builder: (context) => AlertDialog(
         title: const Text('Select Theme'),
@@ -235,69 +259,6 @@ class ResponsiveAppBarActions extends StatelessWidget {
           TextButton(
             onPressed: () => Navigator.pop(context),
             child: const Text('Cancel'),
-          ),
-        ],
-      ),
-    );
-  }
-
-  void _exportSave(BuildContext context) {
-    final jsonString = saveManager.exportSave();
-    if (jsonString != null) {
-      showDialog<void>(
-        context: context,
-        builder: (context) => AlertDialog(
-          title: const Text('Export Save'),
-          content: SelectableText(
-            jsonString,
-            style: const TextStyle(fontFamily: 'monospace', fontSize: 12),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: const Text('Close'),
-            ),
-          ],
-        ),
-      );
-    }
-  }
-
-  void _showImportDialog(BuildContext context) {
-    final controller = TextEditingController();
-    showDialog<void>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Import Save'),
-        content: TextField(
-          controller: controller,
-          maxLines: 5,
-          decoration: const InputDecoration(
-            hintText: 'Paste save data here...',
-            border: OutlineInputBorder(),
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Cancel'),
-          ),
-          TextButton(
-            onPressed: () {
-              final saveData = saveManager.importSave(controller.text);
-              if (saveData != null) {
-                onImport(saveData);
-                Navigator.pop(context);
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('Save imported successfully')),
-                );
-              } else {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('Invalid save data')),
-                );
-              }
-            },
-            child: const Text('Import'),
           ),
         ],
       ),

@@ -99,6 +99,9 @@ class _GameScreenState extends State<GameScreen>
     // Listen to activity manager changes
     _activityManager.addListener(_onActivityManagerChanged);
 
+    // Set up day expired callback
+    _activityManager.onDayExpired = _onDayExpired;
+
     // Load saved game and start
     _initializeGame();
   }
@@ -144,6 +147,51 @@ class _GameScreenState extends State<GameScreen>
     setState(() {});
   }
 
+  void _onDayExpired(Map<StatType, double> dailyGains) {
+    // Show the day end modal
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _showDayEndModal(dailyGains);
+    });
+  }
+
+  void _showDayEndModal(Map<StatType, double> dailyGains) {
+    showDialog<void>(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => DayEndModal(
+        dayCount: _gameTime.dayCount,
+        dailyGains: dailyGains,
+        onStartNewDay: () {
+          _activityManager.startNewDay();
+        },
+      ),
+    );
+  }
+
+  void _handleReset() {
+    // Stop any running activity
+    _activityManager.stopActivity();
+
+    // Reset character to default state
+    _character.restoreFrom(Character(name: 'Player'));
+
+    // Reset game time
+    _gameTime.reset();
+
+    // Clear daily completions
+    _activityManager.clearDailyCompletions();
+
+    // Delete saved data
+    _saveManager.deleteSave();
+
+    // Resume game loop if paused
+    if (_gameLoop.isPaused) {
+      _gameLoop.resume();
+    }
+
+    setState(() {});
+  }
+
   @override
   void dispose() {
     _activityManager.removeListener(_onActivityManagerChanged);
@@ -175,6 +223,7 @@ class _GameScreenState extends State<GameScreen>
             themeProvider: widget.themeProvider,
             saveManager: _saveManager,
             onImport: _handleImport,
+            onReset: _handleReset,
             isPaused: _gameLoop.isPaused,
             onTogglePause: _togglePause,
           ),
