@@ -598,7 +598,7 @@ void main() {
       gameLoop.dispose();
     });
 
-    test('should accumulate daily gains instead of applying immediately', () {
+    test('should track daily completions instead of applying immediately', () {
       // Initial stats
       final initialEndurance = character.stats.endurance;
 
@@ -611,34 +611,112 @@ void main() {
       // Stats should NOT have changed yet
       expect(character.stats.endurance, equals(initialEndurance));
 
-      // But daily gains should have accumulated
+      // But daily completions should be tracked
+      expect(activityManager.dailyCompletions['working'], equals(1));
+
+      // And daily gains should show the expected gains
       expect(activityManager.dailyGains.isNotEmpty, isTrue);
       expect(activityManager.dailyGains[StatType.endurance], greaterThan(0));
     });
 
-    test('startNewDay should apply accumulated gains', () {
+    test('startNewDay should apply gains only for new levels above record', () {
       final initialEndurance = character.stats.endurance;
 
-      // Complete an activity to accumulate gains
+      // Enable auto-repeat to complete multiple times
+      activityManager.autoRepeat = true;
       activityManager.startActivity(Activities.working, force: true);
-      tickerProvider.ticker!.advance(const Duration(milliseconds: 5000));
 
-      // Get the accumulated gain
-      final accumulatedEndurance =
-          activityManager.dailyGains[StatType.endurance] ?? 0;
-      expect(accumulatedEndurance, greaterThan(0));
+      // Working: duration starts at ~5s, increases with each completion
+      // Advance in small increments to allow multiple completions
+      // Complete 3 times (need ~17s total with increasing difficulty)
+      for (var i = 0; i < 20; i++) {
+        tickerProvider.ticker!.advance(const Duration(milliseconds: 1000));
+      }
+
+      expect(activityManager.dailyCompletions['working'], equals(3));
+
+      // Get the expected gains (3 new levels, since record is 0)
+      final expectedGains = activityManager.dailyGains;
+      expect(expectedGains[StatType.endurance], greaterThan(0));
 
       // Start a new day
       activityManager.startNewDay();
 
       // Stats should now be applied
+      expect(character.stats.endurance, greaterThan(initialEndurance));
+
+      // Record should be updated
+      expect(character.getCompletionRecord('working'), equals(3));
+
+      // Daily completions should be cleared
+      expect(activityManager.dailyCompletions.isEmpty, isTrue);
+    });
+
+    test('should not gain stats if completions are below record', () {
+      // Set a pre-existing record of 5 completions
+      character.updateCompletionRecord('working', 5);
+      final initialEndurance = character.stats.endurance;
+
+      // Enable auto-repeat
+      activityManager.autoRepeat = true;
+      activityManager.startActivity(Activities.working, force: true);
+
+      // Complete activity only 3 times (below record of 5)
+      for (var i = 0; i < 20; i++) {
+        tickerProvider.ticker!.advance(const Duration(milliseconds: 1000));
+      }
+
+      expect(activityManager.dailyCompletions['working'], equals(3));
+
+      // Daily gains should be empty (3 < 5 record)
+      expect(activityManager.dailyGains.isEmpty, isTrue);
+
+      // Start a new day
+      activityManager.startNewDay();
+
+      // Stats should NOT have changed
+      expect(character.stats.endurance, equals(initialEndurance));
+
+      // Record should still be 5
+      expect(character.getCompletionRecord('working'), equals(5));
+    });
+
+    test('should only gain stats for levels above record', () {
+      // Set a pre-existing record of 2 completions
+      character.updateCompletionRecord('working', 2);
+      final initialEndurance = character.stats.endurance;
+
+      // Enable auto-repeat
+      activityManager.autoRepeat = true;
+      activityManager.startActivity(Activities.working, force: true);
+
+      // Complete activity 5 times (3 above record)
+      // Each completion takes longer due to difficulty increase
+      for (var i = 0; i < 40; i++) {
+        tickerProvider.ticker!.advance(const Duration(milliseconds: 1000));
+      }
+
+      expect(activityManager.dailyCompletions['working'], equals(5));
+
+      // Daily gains should be for 3 new levels (5 - 2 = 3)
+      final workingRewards = Activities.working.rewards;
+      final expectedEndurance = (workingRewards[StatType.endurance] ?? 0) * 3;
       expect(
-        character.stats.endurance,
-        closeTo(initialEndurance + accumulatedEndurance, 0.001),
+        activityManager.dailyGains[StatType.endurance],
+        closeTo(expectedEndurance, 0.001),
       );
 
-      // Daily gains should be cleared
-      expect(activityManager.dailyGains.isEmpty, isTrue);
+      // Start a new day
+      activityManager.startNewDay();
+
+      // Stats should have increased by 3x the reward
+      expect(
+        character.stats.endurance,
+        closeTo(initialEndurance + expectedEndurance, 0.001),
+      );
+
+      // Record should be updated to 5
+      expect(character.getCompletionRecord('working'), equals(5));
     });
 
     test('should stop activity and trigger callback when day expires', () {
@@ -695,9 +773,8 @@ void main() {
       // Advance time - should not process
       tickerProvider.ticker!.advance(const Duration(milliseconds: 5000));
 
-      // Activity might have been stopped immediately due to day expiry check
-      // The key is that no stats were gained
-      expect(activityManager.dailyGains.isEmpty, isTrue);
+      // No completions should be recorded
+      expect(activityManager.dailyCompletions.isEmpty, isTrue);
     });
   });
 }

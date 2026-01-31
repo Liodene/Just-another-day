@@ -124,9 +124,11 @@ class Character {
     CharacterStats? stats,
     Map<String, int>? activityCompletions,
     Map<String, double>? savedActivityProgress,
+    Map<String, int>? completionRecords,
   }) : stats = stats ?? CharacterStats(),
        _activityCompletions = activityCompletions ?? {},
-       _savedActivityProgress = savedActivityProgress ?? {};
+       _savedActivityProgress = savedActivityProgress ?? {},
+       _completionRecords = completionRecords ?? {};
 
   /// Creates a [Character] instance from a JSON map.
   factory Character.fromJson(Map<String, dynamic> json) {
@@ -144,6 +146,13 @@ class Character {
         (key, value) => MapEntry(key.toString(), (value as num).toDouble()),
       );
     }
+    final recordsRaw = json['completionRecords'];
+    Map<String, int>? records;
+    if (recordsRaw != null && recordsRaw is Map) {
+      records = recordsRaw.map(
+        (key, value) => MapEntry(key.toString(), (value as num).toInt()),
+      );
+    }
     return Character(
       name: json['name'] as String? ?? 'Player',
       stats: json['stats'] != null
@@ -151,6 +160,7 @@ class Character {
           : null,
       activityCompletions: completions,
       savedActivityProgress: savedProgress,
+      completionRecords: records,
     );
   }
 
@@ -161,6 +171,7 @@ class Character {
       'stats': stats.toJson(),
       'activityCompletions': _activityCompletions,
       'savedActivityProgress': _savedActivityProgress,
+      'completionRecords': _completionRecords,
     };
   }
 
@@ -177,6 +188,10 @@ class Character {
   /// Saved partial progress for activities (by activity ID).
   /// Stores the progress percentage (0.0 to 1.0) when switching activities.
   final Map<String, double> _savedActivityProgress;
+
+  /// Record of max completions reached in a single day per activity.
+  /// Used to determine stat gains - only completions above the record give stats.
+  final Map<String, int> _completionRecords;
 
   /// Gets the number of completions for a specific activity.
   int getCompletions(String activityId) {
@@ -228,6 +243,27 @@ class Character {
   Map<String, int> get activityCompletions =>
       Map<String, int>.from(_activityCompletions);
 
+  /// Gets the completion record for a specific activity.
+  /// This is the max completions reached in any single day.
+  int getCompletionRecord(String activityId) {
+    return _completionRecords[activityId] ?? 0;
+  }
+
+  /// Updates the completion record for an activity if the new value is higher.
+  /// Returns the number of new levels gained (completions - oldRecord).
+  int updateCompletionRecord(String activityId, int completions) {
+    final oldRecord = _completionRecords[activityId] ?? 0;
+    if (completions > oldRecord) {
+      _completionRecords[activityId] = completions;
+      return completions - oldRecord;
+    }
+    return 0;
+  }
+
+  /// Gets a copy of the completion records map.
+  Map<String, int> get completionRecords =>
+      Map<String, int>.from(_completionRecords);
+
   /// Restores state from another character (used when loading a save).
   void restoreFrom(Character other) {
     stats.strength = other.stats.strength;
@@ -241,6 +277,9 @@ class Character {
     _savedActivityProgress
       ..clear()
       ..addAll(other._savedActivityProgress);
+    _completionRecords
+      ..clear()
+      ..addAll(other._completionRecords);
   }
 
   /// Simple power function for double base and int exponent.

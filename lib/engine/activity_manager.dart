@@ -62,9 +62,9 @@ class ActivityManager extends ChangeNotifier {
   PlannedActivityCompletedCallback? _onPlannedActivityCompleted;
   DayExpiredCallback? _onDayExpired;
 
-  /// Accumulated stat gains for the current day.
-  /// These are applied when the day is reset via [startNewDay].
-  final Map<StatType, double> _dailyGains = {};
+  /// Completions per activity for the current day.
+  /// At day end, only completions above the character's record give stat gains.
+  final Map<String, int> _dailyCompletions = {};
 
   /// The activity planner for managing the activity queue.
   ActivityPlanner get planner => _planner;
@@ -107,8 +107,38 @@ class ActivityManager extends ChangeNotifier {
     _onDayExpired = callback;
   }
 
-  /// Gets the accumulated stat gains for the current day.
-  Map<StatType, double> get dailyGains => Map.unmodifiable(_dailyGains);
+  /// Gets the daily completions per activity.
+  Map<String, int> get dailyCompletions => Map.unmodifiable(_dailyCompletions);
+
+  /// Gets the expected stat gains for the current day.
+  ///
+  /// Only completions above the character's record count towards stat gains.
+  Map<StatType, double> get dailyGains {
+    final gains = <StatType, double>{};
+
+    for (final entry in _dailyCompletions.entries) {
+      final activityId = entry.key;
+      final completions = entry.value;
+      final record = character.getCompletionRecord(activityId);
+
+      // Only new levels above the record give stats
+      final newLevels = completions > record ? completions - record : 0;
+      if (newLevels > 0) {
+        // Find the activity to get its rewards
+        final activity = Activities.all.firstWhere(
+          (a) => a.id == activityId,
+          orElse: () => Activities.working,
+        );
+
+        for (final reward in activity.rewards.entries) {
+          gains[reward.key] =
+              (gains[reward.key] ?? 0.0) + reward.value * newLevels;
+        }
+      }
+    }
+
+    return Map.unmodifiable(gains);
+  }
 
   void _onPlannerChanged() {
     notifyListeners();
@@ -189,7 +219,8 @@ class ActivityManager extends ChangeNotifier {
     if (_currentProgress == null) return;
 
     if (grantPartialRewards && _currentProgress!.progress > 0) {
-      _applyRewards(_currentProgress!.activity, _currentProgress!.progress);
+      // Partial completions don't count towards daily stats in the new system
+      // (only full completions above record give stats)
     }
 
     // Save partial progress before stopping (unless granting rewards)
@@ -257,16 +288,16 @@ class ActivityManager extends ChangeNotifier {
     // Pause the game loop - no point running it while day is expired
     _gameLoop.pause();
 
-    // Notify listeners about day expiration
-    _onDayExpired?.call(Map.from(_dailyGains));
+    // Notify listeners about day expiration with computed gains
+    _onDayExpired?.call(dailyGains);
     notifyListeners();
   }
 
   void _onActivityComplete() {
     final activity = _currentProgress!.activity;
 
-    // Apply full rewards
-    _applyRewards(activity, 1.0);
+    // Record the completion for daily stats
+    _recordCompletion(activity, 1.0);
 
     // Increment this activity's completion count (increases its difficulty)
     character.addCompletion(activity.id);
@@ -458,25 +489,50 @@ class ActivityManager extends ChangeNotifier {
     return result;
   }
 
-  void _applyRewards(Activity activity, double multiplier) {
-    for (final entry in activity.rewards.entries) {
-      final amount = entry.value * multiplier;
-      // Accumulate rewards instead of applying directly
-      _dailyGains[entry.key] = (_dailyGains[entry.key] ?? 0.0) + amount;
+  /// Records a completion for tracking daily stats.
+  ///
+  /// Note: [multiplier] is ignored since stats are based on completion count,
+  /// not partial completions.
+  void _recordCompletion(Activity activity, double multiplier) {
+    // Only count full completions (multiplier == 1.0)
+    if (multiplier >= 1.0) {
+      _dailyCompletions[activity.id] =
+          (_dailyCompletions[activity.id] ?? 0) + 1;
     }
   }
 
-  /// Starts a new day, applying accumulated stat gains and resetting time.
+  /// Starts a new day, applying stat gains and resetting time.
   ///
+  /// Only completions above the character's record give stat gains.
   /// This should be called when the user dismisses the day end modal.
   void startNewDay() {
-    // Apply accumulated stats to the character
-    for (final entry in _dailyGains.entries) {
-      character.stats.addToStat(entry.key, entry.value);
+    // Calculate and apply stat gains based on new levels above records
+    for (final entry in _dailyCompletions.entries) {
+      final activityId = entry.key;
+      final completions = entry.value;
+
+      // Update record and get number of new levels
+      final newLevels = character.updateCompletionRecord(
+        activityId,
+        completions,
+      );
+
+      if (newLevels > 0) {
+        // Find the activity to get its rewards
+        final activity = Activities.all.firstWhere(
+          (a) => a.id == activityId,
+          orElse: () => Activities.working,
+        );
+
+        // Apply rewards for each new level
+        for (final reward in activity.rewards.entries) {
+          character.stats.addToStat(reward.key, reward.value * newLevels);
+        }
+      }
     }
 
-    // Reset daily gains
-    _dailyGains.clear();
+    // Reset daily completions
+    _dailyCompletions.clear();
 
     // Start a new day in the game time
     gameTime.startNewDay();
@@ -487,9 +543,9 @@ class ActivityManager extends ChangeNotifier {
     notifyListeners();
   }
 
-  /// Clears accumulated daily gains without applying them.
-  void clearDailyGains() {
-    _dailyGains.clear();
+  /// Clears daily completions without applying them.
+  void clearDailyCompletions() {
+    _dailyCompletions.clear();
     notifyListeners();
   }
 
