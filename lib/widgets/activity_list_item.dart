@@ -12,8 +12,6 @@ class ActivityListItem extends StatelessWidget {
     required this.isCurrentActivity,
     required this.canStart,
     required this.onStart,
-    this.dailyCompletions = 0,
-    this.maxCompletions = 0,
   });
 
   final Activity activity;
@@ -22,16 +20,12 @@ class ActivityListItem extends StatelessWidget {
   final bool canStart;
   final VoidCallback onStart;
 
-  /// Number of completions for this activity today.
-  final int dailyCompletions;
-
-  /// Record (max) completions for this activity.
-  final int maxCompletions;
-
   @override
   Widget build(BuildContext context) {
     final meetsRequirements = activity.meetsRequirements(character.stats);
     final coefficient = character.getDifficultyCoefficient(activity.id);
+    final dailyCompletions = character.getCompletions(activity.id);
+    final maxCompletions = character.getCompletionRecord(activity.id);
     final duration = activity.calculateDuration(
       character.stats,
       difficultyCoefficient: coefficient,

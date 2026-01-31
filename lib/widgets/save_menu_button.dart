@@ -3,70 +3,19 @@ import 'package:flutter/services.dart';
 
 import '../engine/save_manager.dart';
 
-/// A menu button that provides save, export, import, and reset functionality.
-class SaveMenuButton extends StatelessWidget {
-  /// Creates a new [SaveMenuButton].
-  const SaveMenuButton({
+/// Shared actions for save, export, import, and reset dialogs.
+class SaveMenuActions {
+  const SaveMenuActions({
     required this.saveManager,
     required this.onImport,
     required this.onReset,
-    super.key,
   });
 
-  /// The save manager instance.
   final SaveManager saveManager;
-
-  /// Callback when a save is imported successfully.
   final void Function(GameSaveData) onImport;
-
-  /// Callback when the save is reset.
   final VoidCallback onReset;
 
-  @override
-  Widget build(BuildContext context) {
-    return PopupMenuButton<String>(
-      icon: const Icon(Icons.save),
-      tooltip: 'Save Menu',
-      onSelected: (value) => _handleMenuSelection(context, value),
-      itemBuilder: (context) => [
-        const PopupMenuItem<String>(
-          value: 'save',
-          child: ListTile(
-            leading: Icon(Icons.save),
-            title: Text('Save Game'),
-            contentPadding: EdgeInsets.zero,
-          ),
-        ),
-        const PopupMenuItem<String>(
-          value: 'export',
-          child: ListTile(
-            leading: Icon(Icons.upload),
-            title: Text('Export Save'),
-            contentPadding: EdgeInsets.zero,
-          ),
-        ),
-        const PopupMenuItem<String>(
-          value: 'import',
-          child: ListTile(
-            leading: Icon(Icons.download),
-            title: Text('Import Save'),
-            contentPadding: EdgeInsets.zero,
-          ),
-        ),
-        const PopupMenuDivider(),
-        PopupMenuItem<String>(
-          value: 'reset',
-          child: ListTile(
-            leading: Icon(Icons.delete_forever, color: Colors.red[700]),
-            title: Text('Reset Save', style: TextStyle(color: Colors.red[700])),
-            contentPadding: EdgeInsets.zero,
-          ),
-        ),
-      ],
-    );
-  }
-
-  Future<void> _handleMenuSelection(BuildContext context, String value) async {
+  Future<void> handleSelection(BuildContext context, String value) async {
     switch (value) {
       case 'save':
         await _handleSave(context);
@@ -318,5 +267,75 @@ class SaveMenuButton extends StatelessWidget {
         );
       }
     }
+  }
+}
+
+/// A menu button that provides save, export, import, and reset functionality.
+class SaveMenuButton extends StatelessWidget {
+  /// Creates a new [SaveMenuButton].
+  const SaveMenuButton({
+    required this.saveManager,
+    required this.onImport,
+    required this.onReset,
+    super.key,
+  });
+
+  /// The save manager instance.
+  final SaveManager saveManager;
+
+  /// Callback when a save is imported successfully.
+  final void Function(GameSaveData) onImport;
+
+  /// Callback when the save is reset.
+  final VoidCallback onReset;
+
+  @override
+  Widget build(BuildContext context) {
+    final actions = SaveMenuActions(
+      saveManager: saveManager,
+      onImport: onImport,
+      onReset: onReset,
+    );
+
+    return PopupMenuButton<String>(
+      icon: const Icon(Icons.save),
+      tooltip: 'Save Menu',
+      onSelected: (value) => actions.handleSelection(context, value),
+      itemBuilder: (context) => [
+        const PopupMenuItem<String>(
+          value: 'save',
+          child: ListTile(
+            leading: Icon(Icons.save),
+            title: Text('Save Game'),
+            contentPadding: EdgeInsets.zero,
+          ),
+        ),
+        const PopupMenuItem<String>(
+          value: 'export',
+          child: ListTile(
+            leading: Icon(Icons.upload),
+            title: Text('Export Save'),
+            contentPadding: EdgeInsets.zero,
+          ),
+        ),
+        const PopupMenuItem<String>(
+          value: 'import',
+          child: ListTile(
+            leading: Icon(Icons.download),
+            title: Text('Import Save'),
+            contentPadding: EdgeInsets.zero,
+          ),
+        ),
+        const PopupMenuDivider(),
+        PopupMenuItem<String>(
+          value: 'reset',
+          child: ListTile(
+            leading: Icon(Icons.delete_forever, color: Colors.red[700]),
+            title: Text('Reset Save', style: TextStyle(color: Colors.red[700])),
+            contentPadding: EdgeInsets.zero,
+          ),
+        ),
+      ],
+    );
   }
 }

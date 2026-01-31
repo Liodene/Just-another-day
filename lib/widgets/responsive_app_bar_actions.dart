@@ -168,28 +168,31 @@ class ResponsiveAppBarActions extends StatelessWidget {
     );
   }
 
-  void _handleMenuSelection(BuildContext context, String value) {
+  Future<void> _handleMenuSelection(BuildContext context, String value) async {
+    final saveActions = SaveMenuActions(
+      saveManager: saveManager,
+      onImport: onImport,
+      onReset: onReset,
+    );
+
     switch (value) {
       case 'toggle_dark_mode':
-        themeProvider.toggleDarkMode();
+        await themeProvider.toggleDarkMode();
+        return;
       case 'theme':
-        _showThemeDialog(context);
+        await _showThemeDialog(context);
+        return;
       case 'save':
-        saveManager.save();
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(const SnackBar(content: Text('Game saved')));
       case 'export':
-        _exportSave(context);
       case 'import':
-        _showImportDialog(context);
       case 'reset':
-        _showResetDialog(context);
+        await saveActions.handleSelection(context, value);
+        return;
     }
   }
 
-  void _showThemeDialog(BuildContext context) {
-    showDialog<void>(
+  Future<void> _showThemeDialog(BuildContext context) {
+    return showDialog<void>(
       context: context,
       builder: (context) => AlertDialog(
         title: const Text('Select Theme'),
@@ -260,114 +263,5 @@ class ResponsiveAppBarActions extends StatelessWidget {
         ],
       ),
     );
-  }
-
-  void _exportSave(BuildContext context) {
-    final jsonString = saveManager.exportSave();
-    if (jsonString != null) {
-      showDialog<void>(
-        context: context,
-        builder: (context) => AlertDialog(
-          title: const Text('Export Save'),
-          content: SelectableText(
-            jsonString,
-            style: const TextStyle(fontFamily: 'monospace', fontSize: 12),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: const Text('Close'),
-            ),
-          ],
-        ),
-      );
-    }
-  }
-
-  void _showImportDialog(BuildContext context) {
-    final controller = TextEditingController();
-    showDialog<void>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Import Save'),
-        content: TextField(
-          controller: controller,
-          maxLines: 5,
-          decoration: const InputDecoration(
-            hintText: 'Paste save data here...',
-            border: OutlineInputBorder(),
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Cancel'),
-          ),
-          TextButton(
-            onPressed: () {
-              final saveData = saveManager.importSave(controller.text);
-              if (saveData != null) {
-                onImport(saveData);
-                Navigator.pop(context);
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('Save imported successfully')),
-                );
-              } else {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('Invalid save data')),
-                );
-              }
-            },
-            child: const Text('Import'),
-          ),
-        ],
-      ),
-    );
-  }
-
-  void _showResetDialog(BuildContext context) {
-    showDialog<bool>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: Row(
-          children: [
-            Icon(Icons.warning, color: Colors.red[700]),
-            const SizedBox(width: 8),
-            const Text('Reset Save'),
-          ],
-        ),
-        content: const Text(
-          'This will permanently delete all your progress and start a new game.\n\n'
-          'This action cannot be undone!\n\n'
-          'Are you sure you want to reset?',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(false),
-            child: const Text('Cancel'),
-          ),
-          FilledButton(
-            onPressed: () => Navigator.of(context).pop(true),
-            style: FilledButton.styleFrom(
-              backgroundColor: Colors.red[700],
-              foregroundColor: Colors.white,
-            ),
-            child: const Text('Reset'),
-          ),
-        ],
-      ),
-    ).then((confirm) {
-      if (confirm ?? false) {
-        onReset();
-        if (context.mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Save reset successfully!'),
-              backgroundColor: Colors.orange,
-            ),
-          );
-        }
-      }
-    });
   }
 }

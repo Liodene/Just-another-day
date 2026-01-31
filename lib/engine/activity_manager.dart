@@ -62,10 +62,6 @@ class ActivityManager extends ChangeNotifier {
   PlannedActivityCompletedCallback? _onPlannedActivityCompleted;
   DayExpiredCallback? _onDayExpired;
 
-  /// Completions per activity for the current day.
-  /// At day end, only completions above the character's record give stat gains.
-  final Map<String, int> _dailyCompletions = {};
-
   /// The activity planner for managing the activity queue.
   ActivityPlanner get planner => _planner;
 
@@ -108,7 +104,8 @@ class ActivityManager extends ChangeNotifier {
   }
 
   /// Gets the daily completions per activity.
-  Map<String, int> get dailyCompletions => Map.unmodifiable(_dailyCompletions);
+  Map<String, int> get dailyCompletions =>
+      Map.unmodifiable(character.activityCompletions);
 
   /// Gets the expected stat gains for the current day.
   ///
@@ -116,7 +113,8 @@ class ActivityManager extends ChangeNotifier {
   Map<StatType, double> get dailyGains {
     final gains = <StatType, double>{};
 
-    for (final entry in _dailyCompletions.entries) {
+    final dailyCompletions = character.activityCompletions;
+    for (final entry in dailyCompletions.entries) {
       final activityId = entry.key;
       final completions = entry.value;
       final record = character.getCompletionRecord(activityId);
@@ -218,11 +216,6 @@ class ActivityManager extends ChangeNotifier {
   }) {
     if (_currentProgress == null) return;
 
-    if (grantPartialRewards && _currentProgress!.progress > 0) {
-      // Partial completions don't count towards daily stats in the new system
-      // (only full completions above record give stats)
-    }
-
     // Save partial progress before stopping (unless granting rewards)
     if (saveProgress && !grantPartialRewards) {
       _saveCurrentProgress();
@@ -296,10 +289,7 @@ class ActivityManager extends ChangeNotifier {
   void _onActivityComplete() {
     final activity = _currentProgress!.activity;
 
-    // Record the completion for daily stats
-    _recordCompletion(activity, 1.0);
-
-    // Increment this activity's completion count (increases its difficulty)
+    // Track completion for daily stats and difficulty.
     character.addCompletion(activity.id);
 
     // Clear any saved progress since activity completed
@@ -427,9 +417,8 @@ class ActivityManager extends ChangeNotifier {
 
   /// Estimates the total in-game time for the current plan.
   ///
-  /// Since stats are now applied at day end (not during the day), this
-  /// calculation only needs to account for difficulty increasing with each
-  /// completion (1.10x per completion), making it simpler and more accurate.
+  /// The estimate accounts for difficulty increasing with each completion
+  /// (1.10x per completion).
   double estimatePlanTime() {
     if (!_planner.hasPlannedActivities) return 0.0;
 
@@ -489,25 +478,14 @@ class ActivityManager extends ChangeNotifier {
     return result;
   }
 
-  /// Records a completion for tracking daily stats.
-  ///
-  /// Note: [multiplier] is ignored since stats are based on completion count,
-  /// not partial completions.
-  void _recordCompletion(Activity activity, double multiplier) {
-    // Only count full completions (multiplier == 1.0)
-    if (multiplier >= 1.0) {
-      _dailyCompletions[activity.id] =
-          (_dailyCompletions[activity.id] ?? 0) + 1;
-    }
-  }
-
   /// Starts a new day, applying stat gains and resetting time.
   ///
   /// Only completions above the character's record give stat gains.
   /// This should be called when the user dismisses the day end modal.
   void startNewDay() {
     // Calculate and apply stat gains based on new levels above records
-    for (final entry in _dailyCompletions.entries) {
+    final dailyCompletions = character.activityCompletions;
+    for (final entry in dailyCompletions.entries) {
       final activityId = entry.key;
       final completions = entry.value;
 
@@ -531,10 +509,7 @@ class ActivityManager extends ChangeNotifier {
       }
     }
 
-    // Reset daily completions
-    _dailyCompletions.clear();
-
-    // Reset activity difficulty (completions used for difficulty coefficient)
+    // Reset daily completions and activity difficulty.
     character.resetCompletions();
 
     // Start a new day in the game time
@@ -548,7 +523,7 @@ class ActivityManager extends ChangeNotifier {
 
   /// Clears daily completions without applying them.
   void clearDailyCompletions() {
-    _dailyCompletions.clear();
+    character.resetCompletions();
     notifyListeners();
   }
 

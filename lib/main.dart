@@ -262,7 +262,6 @@ class _GameScreenState extends State<GameScreen>
                       character: _character,
                       currentActivityId: _activityManager.currentActivity?.id,
                       hasActiveActivity: _activityManager.hasActiveActivity,
-                      dailyCompletions: _activityManager.dailyCompletions,
                       onStartActivity: _handleStartActivity,
                     ),
                   ],
