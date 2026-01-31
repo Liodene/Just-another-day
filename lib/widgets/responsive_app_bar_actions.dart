@@ -177,19 +177,22 @@ class ResponsiveAppBarActions extends StatelessWidget {
 
     switch (value) {
       case 'toggle_dark_mode':
-        themeProvider.toggleDarkMode();
+        await themeProvider.toggleDarkMode();
+        return;
       case 'theme':
-        _showThemeDialog(context);
+        await _showThemeDialog(context);
+        return;
       case 'save':
       case 'export':
       case 'import':
       case 'reset':
         await saveActions.handleSelection(context, value);
+        return;
     }
   }
 
-  void _showThemeDialog(BuildContext context) {
-    showDialog<void>(
+  Future<void> _showThemeDialog(BuildContext context) {
+    return showDialog<void>(
       context: context,
       builder: (context) => AlertDialog(
         title: const Text('Select Theme'),
