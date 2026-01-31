@@ -18,15 +18,19 @@ typedef ActivityProgressCallback = void Function(ActivityProgress? progress);
 typedef PlannedActivityCompletedCallback =
     void Function(PlannedActivity planned);
 
+/// Callback type for when the day expires (time reaches 24:00).
+typedef DayExpiredCallback = void Function(Map<StatType, double> dailyGains);
+
 /// Manages activity progression and integrates with the game loop.
 ///
 /// This class handles:
 /// - Starting and stopping activities
 /// - Tracking activity progress
-/// - Applying stat rewards on completion
+/// - Accumulating stat rewards (applied at day end)
 /// - Auto-repeating activities
 /// - Tracking in-game time and real time played
 /// - Activity planning and queue management
+/// - Day expiration handling
 class ActivityManager extends ChangeNotifier {
   /// Creates a new [ActivityManager].
   ActivityManager({
@@ -56,6 +60,12 @@ class ActivityManager extends ChangeNotifier {
   ActivityCompletedCallback? _onActivityCompleted;
   ActivityProgressCallback? _onProgressChanged;
   PlannedActivityCompletedCallback? _onPlannedActivityCompleted;
+  DayExpiredCallback? _onDayExpired;
+  bool _dayExpiredNotified = false;
+
+  /// Accumulated stat gains for the current day.
+  /// These are applied when the day is reset via [startNewDay].
+  final Map<StatType, double> _dailyGains = {};
 
   /// The activity planner for managing the activity queue.
   ActivityPlanner get planner => _planner;
@@ -92,6 +102,14 @@ class ActivityManager extends ChangeNotifier {
   set onPlannedActivityCompleted(PlannedActivityCompletedCallback? callback) {
     _onPlannedActivityCompleted = callback;
   }
+
+  /// Sets a callback for when the day expires (time reaches 24:00).
+  set onDayExpired(DayExpiredCallback? callback) {
+    _onDayExpired = callback;
+  }
+
+  /// Gets the accumulated stat gains for the current day.
+  Map<StatType, double> get dailyGains => Map.unmodifiable(_dailyGains);
 
   void _onPlannerChanged() {
     notifyListeners();
@@ -198,9 +216,35 @@ class ActivityManager extends ChangeNotifier {
   }
 
   void _onGameLoopTick(double deltaTimeMs) {
+    // Check if day just expired
+    if (gameTime.isExpired && !_dayExpiredNotified) {
+      _dayExpiredNotified = true;
+      // Stop current activity when day expires
+      if (_currentProgress != null) {
+        stopActivity(saveProgress: true);
+      }
+      _onDayExpired?.call(Map.from(_dailyGains));
+      notifyListeners();
+      return;
+    }
+
+    // Don't process activities if day is expired
+    if (gameTime.isExpired) {
+      return;
+    }
+
     // Only update game time when there's an active activity
     if (_currentProgress != null) {
       gameTime.update(deltaTimeMs);
+
+      // Check again if day just expired after time update
+      if (gameTime.isExpired) {
+        _dayExpiredNotified = true;
+        stopActivity(saveProgress: true);
+        _onDayExpired?.call(Map.from(_dailyGains));
+        notifyListeners();
+        return;
+      }
 
       // Convert milliseconds to seconds for activity progress
       final deltaTimeSec = deltaTimeMs / 1000.0;
@@ -358,16 +402,13 @@ class ActivityManager extends ChangeNotifier {
 
   /// Estimates the total in-game time for the current plan.
   ///
-  /// This takes into account:
-  /// - Difficulty increasing with each completion (1.10x per completion)
-  /// - Stats improving from activity rewards after each completion
+  /// Since stats are now applied at day end (not during the day), this
+  /// calculation only needs to account for difficulty increasing with each
+  /// completion (1.10x per completion), making it simpler and more accurate.
   double estimatePlanTime() {
     if (!_planner.hasPlannedActivities) return 0.0;
 
-    // Create simulated stats (copy of current stats)
-    final simStats = character.stats.copyWith();
-
-    // Track simulated completions per activity
+    // Track simulated completions per activity (difficulty increases)
     final simCompletions = Map<String, int>.from(character.activityCompletions);
 
     var totalTime = 0.0;
@@ -386,48 +427,23 @@ class ActivityManager extends ChangeNotifier {
           final remaining = (planned.targetValue - planned.completedValue)
               .toInt();
           for (var i = 0; i < remaining; i++) {
-            // Calculate duration with current simulated state
+            // Calculate duration with current difficulty
             final coefficient = _calculateCoefficient(
               simCompletions[activityId] ?? 0,
             );
             final duration = activity.calculateDuration(
-              simStats,
+              character.stats,
               difficultyCoefficient: coefficient,
             );
             totalTime += duration;
 
-            // Simulate completion: update stats and difficulty
-            _applySimulatedRewards(simStats, activity.rewards);
+            // Simulate completion: increase difficulty only
             simCompletions[activityId] = (simCompletions[activityId] ?? 0) + 1;
           }
 
         case PlanTargetType.inGameTime:
-          // For time-based targets, estimate how many completions will occur
-          // and account for stats evolution during that time
-          var remainingTime = planned.targetValue - planned.completedValue;
-          while (remainingTime > 0) {
-            final coefficient = _calculateCoefficient(
-              simCompletions[activityId] ?? 0,
-            );
-            final duration = activity.calculateDuration(
-              simStats,
-              difficultyCoefficient: coefficient,
-            );
-
-            if (duration >= remainingTime) {
-              // Partial completion - just add remaining time
-              totalTime += remainingTime;
-              break;
-            }
-
-            // Full completion within the time budget
-            totalTime += duration;
-            remainingTime -= duration;
-
-            // Simulate completion: update stats and difficulty
-            _applySimulatedRewards(simStats, activity.rewards);
-            simCompletions[activityId] = (simCompletions[activityId] ?? 0) + 1;
-          }
+          // For time-based targets, the time is simply the remaining target
+          totalTime += planned.targetValue - planned.completedValue;
 
         case PlanTargetType.unlimited:
           // Already handled above
@@ -448,21 +464,44 @@ class ActivityManager extends ChangeNotifier {
     return result;
   }
 
-  /// Applies rewards to simulated stats.
-  void _applySimulatedRewards(
-    CharacterStats stats,
-    Map<StatType, double> rewards,
-  ) {
-    for (final entry in rewards.entries) {
-      stats.addToStat(entry.key, entry.value);
-    }
-  }
-
   void _applyRewards(Activity activity, double multiplier) {
     for (final entry in activity.rewards.entries) {
       final amount = entry.value * multiplier;
-      character.stats.addToStat(entry.key, amount);
+      // Accumulate rewards instead of applying directly
+      _dailyGains[entry.key] = (_dailyGains[entry.key] ?? 0.0) + amount;
     }
+  }
+
+  /// Starts a new day, applying accumulated stat gains and resetting time.
+  ///
+  /// This should be called when the user dismisses the day end modal.
+  void startNewDay() {
+    // Apply accumulated stats to the character
+    for (final entry in _dailyGains.entries) {
+      character.stats.addToStat(entry.key, entry.value);
+    }
+
+    // Reset daily gains
+    _dailyGains.clear();
+
+    // Reset the day expired notification flag
+    _dayExpiredNotified = false;
+
+    // Start a new day in the game time
+    gameTime.startNewDay();
+
+    // Stop any current activity
+    if (_currentProgress != null) {
+      stopActivity(saveProgress: true);
+    }
+
+    notifyListeners();
+  }
+
+  /// Clears accumulated daily gains without applying them.
+  void clearDailyGains() {
+    _dailyGains.clear();
+    notifyListeners();
   }
 
   /// Disposes of the activity manager and cleans up resources.

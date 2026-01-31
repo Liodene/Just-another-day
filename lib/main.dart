@@ -99,6 +99,9 @@ class _GameScreenState extends State<GameScreen>
     // Listen to activity manager changes
     _activityManager.addListener(_onActivityManagerChanged);
 
+    // Set up day expired callback
+    _activityManager.onDayExpired = _onDayExpired;
+
     // Load saved game and start
     _initializeGame();
   }
@@ -142,6 +145,27 @@ class _GameScreenState extends State<GameScreen>
 
   void _onActivityManagerChanged() {
     setState(() {});
+  }
+
+  void _onDayExpired(Map<StatType, double> dailyGains) {
+    // Show the day end modal
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _showDayEndModal(dailyGains);
+    });
+  }
+
+  void _showDayEndModal(Map<StatType, double> dailyGains) {
+    showDialog<void>(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => DayEndModal(
+        dayCount: _gameTime.dayCount,
+        dailyGains: dailyGains,
+        onStartNewDay: () {
+          _activityManager.startNewDay();
+        },
+      ),
+    );
   }
 
   @override
