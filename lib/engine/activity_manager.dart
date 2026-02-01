@@ -176,7 +176,7 @@ class ActivityManager extends ChangeNotifier {
 
     // Check for saved progress and restore it
     final savedProgress = character.getSavedProgress(activity.id);
-    final elapsedTime = savedProgress * duration;
+    final elapsedTime = duration * savedProgress;
 
     _currentProgress = ActivityProgress(
       activity: activity,
@@ -238,10 +238,10 @@ class ActivityManager extends ChangeNotifier {
     return Activities.all;
   }
 
-  void _onGameLoopTick(double deltaTimeMs) {
+  void _onGameLoopTick(Duration deltaTime) {
     // Only update game time when there's an active activity
     if (_currentProgress != null) {
-      gameTime.update(deltaTimeMs);
+      gameTime.update(deltaTime);
 
       // Check if day just expired after time update
       if (gameTime.isExpired) {
@@ -249,26 +249,27 @@ class ActivityManager extends ChangeNotifier {
         return;
       }
 
-      // Convert milliseconds to seconds for activity progress
-      final deltaTimeSec = deltaTimeMs / 1000.0;
-
-      // Track time for planned activity (in-game time, not real time)
-      final inGameDeltaSec = deltaTimeSec * gameTime.timeMultiplier;
-      final completedPlan = _planner.recordTimeSpent(inGameDeltaSec);
-      if (completedPlan != null) {
-        _onPlannedActivityCompleted?.call(completedPlan);
-        _advanceToNextPlannedActivity();
-      }
-
-      final justCompleted = _currentProgress!.update(deltaTimeSec);
+      // Update activity progress first
+      final justCompleted = _currentProgress!.update(deltaTime);
       _onProgressChanged?.call(_currentProgress);
 
       if (justCompleted) {
         _onActivityComplete();
+      } else {
+        // Only track time for planned activity if not completed
+        // (completion tracking is done in _onActivityComplete)
+        final inGameDelta = Duration(
+          microseconds: (deltaTime.inMicroseconds * gameTime.timeMultiplier).round(),
+        );
+        final completedPlan = _planner.recordTimeSpent(inGameDelta);
+        if (completedPlan != null) {
+          _onPlannedActivityCompleted?.call(completedPlan);
+          _advanceToNextPlannedActivity();
+        }
       }
-    }
 
-    notifyListeners();
+      notifyListeners();
+    }
   }
 
   /// Handles the day expiration by stopping activities and pausing the loop.
@@ -408,7 +409,7 @@ class ActivityManager extends ChangeNotifier {
   }
 
   /// Calculates the duration for an activity based on current character stats.
-  double calculateActivityDuration(Activity activity) {
+  Duration calculateActivityDuration(Activity activity) {
     return activity.calculateDuration(
       character.stats,
       difficultyCoefficient: character.getDifficultyCoefficient(activity.id),
@@ -419,17 +420,17 @@ class ActivityManager extends ChangeNotifier {
   ///
   /// The estimate accounts for difficulty increasing with each completion
   /// (1.10x per completion).
-  double estimatePlanTime() {
-    if (!_planner.hasPlannedActivities) return 0.0;
+  Duration estimatePlanTime() {
+    if (!_planner.hasPlannedActivities) return Duration.zero;
 
     // Track simulated completions per activity (difficulty increases)
     final simCompletions = Map<String, int>.from(character.activityCompletions);
 
-    var totalTime = 0.0;
+    var totalTime = Duration.zero;
 
     for (final planned in _planner.queue) {
       if (planned.targetType == PlanTargetType.unlimited) {
-        return double.infinity;
+        return const Duration(days: 365 * 100); // Effectively infinite
       }
 
       final activity = planned.activity;
@@ -457,7 +458,8 @@ class ActivityManager extends ChangeNotifier {
 
         case PlanTargetType.inGameTime:
           // For time-based targets, the time is simply the remaining target
-          totalTime += planned.targetValue - planned.completedValue;
+          final remainingSeconds = planned.targetValue - planned.completedValue;
+          totalTime += Duration(seconds: remainingSeconds.toInt());
 
         case PlanTargetType.unlimited:
           // Already handled above

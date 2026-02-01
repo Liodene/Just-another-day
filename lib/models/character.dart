@@ -86,18 +86,20 @@ class CharacterStats {
   }
 
   /// Sets a stat value by its type.
+  /// Values are clamped to a minimum of 0.1 to prevent division by zero.
   void setStat(StatType type, double value) {
+    final clampedValue = value.clamp(0.1, double.infinity);
     switch (type) {
       case StatType.strength:
-        strength = value;
+        strength = clampedValue;
       case StatType.intelligence:
-        intelligence = value;
+        intelligence = clampedValue;
       case StatType.endurance:
-        endurance = value;
+        endurance = clampedValue;
       case StatType.charisma:
-        charisma = value;
+        charisma = clampedValue;
       case StatType.agility:
-        agility = value;
+        agility = clampedValue;
     }
   }
 
@@ -270,6 +272,7 @@ class Character {
       Map<String, int>.from(_completionRecords);
 
   /// Restores state from another character (used when loading a save).
+  /// Note: Does not restore the name field - the current character keeps its name.
   void restoreFrom(Character other) {
     stats.strength = other.stats.strength;
     stats.intelligence = other.stats.intelligence;

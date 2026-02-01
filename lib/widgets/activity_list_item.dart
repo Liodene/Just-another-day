@@ -48,7 +48,7 @@ class ActivityListItem extends StatelessWidget {
             Text(activity.description),
             const SizedBox(height: 4),
             Text(
-              'Duration: ${duration.toStringAsFixed(1)}s',
+              'Duration: ${duration.inSeconds}s',
               style: Theme.of(context).textTheme.bodySmall,
             ),
             Text(
@@ -88,32 +88,39 @@ class _CompletionBadge extends StatelessWidget {
     final theme = Theme.of(context);
     final isNewRecord = daily > max;
 
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-      decoration: BoxDecoration(
-        color: isNewRecord
-            ? Colors.green.withValues(alpha: 0.2)
-            : theme.colorScheme.surfaceContainerHighest,
-        borderRadius: BorderRadius.circular(12),
-        border: isNewRecord ? Border.all(color: Colors.green, width: 1) : null,
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Text(
-            '$daily',
-            style: theme.textTheme.bodyMedium?.copyWith(
-              fontWeight: FontWeight.bold,
-              color: isNewRecord ? Colors.green[700] : null,
+    return Semantics(
+      label: isNewRecord
+          ? 'New record: $daily completions today, previous record was $max'
+          : '$daily completions today, record is $max',
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+        decoration: BoxDecoration(
+          color: isNewRecord
+              ? theme.colorScheme.primaryContainer.withValues(alpha: 0.3)
+              : theme.colorScheme.surfaceContainerHighest,
+          borderRadius: BorderRadius.circular(12),
+          border: isNewRecord
+              ? Border.all(color: theme.colorScheme.primary, width: 1)
+              : null,
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              '$daily',
+              style: theme.textTheme.bodyMedium?.copyWith(
+                fontWeight: FontWeight.bold,
+                color: isNewRecord ? theme.colorScheme.primary : null,
+              ),
             ),
-          ),
-          Text(
-            ' / $max',
-            style: theme.textTheme.bodySmall?.copyWith(
-              color: theme.colorScheme.onSurfaceVariant,
+            Text(
+              ' / $max',
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: theme.colorScheme.onSurfaceVariant,
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }

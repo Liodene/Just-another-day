@@ -110,7 +110,7 @@ class _StatGainRow extends StatelessWidget {
             '+${value.toStringAsFixed(2)}',
             style: Theme.of(context).textTheme.bodyMedium?.copyWith(
               fontWeight: FontWeight.bold,
-              color: Colors.green[700],
+              color: Theme.of(context).colorScheme.primary,
             ),
           ),
         ],

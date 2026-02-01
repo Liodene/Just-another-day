@@ -23,10 +23,13 @@ class StatRow extends StatelessWidget {
         children: [
           SizedBox(width: 100, child: Text(name)),
           Expanded(
-            child: LinearProgressIndicator(
-              value: (value / maxValue).clamp(0.0, 1.0),
-              backgroundColor: color.withValues(alpha: 0.2),
-              valueColor: AlwaysStoppedAnimation<Color>(color),
+            child: Semantics(
+              label: '$name: ${value.toStringAsFixed(1)} out of $maxValue',
+              child: LinearProgressIndicator(
+                value: (value / maxValue).clamp(0.0, 1.0),
+                backgroundColor: color.withValues(alpha: 0.2),
+                valueColor: AlwaysStoppedAnimation<Color>(color),
+              ),
             ),
           ),
           const SizedBox(width: 8),

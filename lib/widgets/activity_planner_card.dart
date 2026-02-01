@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 import '../engine/activity_manager.dart';
 import '../engine/activity_planner.dart';
@@ -6,6 +7,7 @@ import '../models/activity.dart';
 import '../models/character.dart';
 import '../models/game_time.dart';
 import '../models/planned_activity.dart';
+import '../utils/time_utils.dart';
 
 /// Displays the activity planner with queued activities.
 class ActivityPlannerCard extends StatelessWidget {
@@ -59,13 +61,13 @@ class ActivityPlannerCard extends StatelessWidget {
 
   Widget _buildEstimatedTime(BuildContext context) {
     final estimatedTime = activityManager.estimatePlanTime();
-    final timeText = estimatedTime.isFinite
-        ? _formatDuration(estimatedTime)
+    final timeText = estimatedTime.inMicroseconds >= 0
+        ? formatDurationCompact(estimatedTime)
         : 'Unlimited';
 
     // Calculate remaining time in the day
-    final remainingTime = GameTime.maxDaySeconds - gameTime.inGameSeconds;
-    final exceedsDay = estimatedTime.isFinite && estimatedTime > remainingTime;
+    final remainingTime = GameTime.maxDayDuration - gameTime.inGameTime;
+    final exceedsDay = estimatedTime.inMicroseconds >= 0 && estimatedTime > remainingTime;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -101,7 +103,7 @@ class ActivityPlannerCard extends StatelessWidget {
                 Flexible(
                   child: Text(
                     'Plan exceeds remaining day time '
-                    '(${_formatDuration(remainingTime)} left)',
+                    '(${formatDurationCompact(remainingTime)} left)',
                     style: Theme.of(
                       context,
                     ).textTheme.bodySmall?.copyWith(color: Colors.orange[900]),
@@ -175,21 +177,6 @@ class ActivityPlannerCard extends StatelessWidget {
       ],
     );
   }
-
-  String _formatDuration(double seconds) {
-    final totalSeconds = seconds.toInt();
-    final hours = totalSeconds ~/ 3600;
-    final minutes = (totalSeconds % 3600) ~/ 60;
-    final secs = totalSeconds % 60;
-
-    if (hours > 0) {
-      return '${hours}h ${minutes}m';
-    } else if (minutes > 0) {
-      return '${minutes}m ${secs}s';
-    } else {
-      return '${secs}s';
-    }
-  }
 }
 
 class _PlannedActivityItem extends StatelessWidget {
@@ -262,8 +249,12 @@ class _AddPlannedActivityDialogState extends State<AddPlannedActivityDialog> {
   @override
   void initState() {
     super.initState();
-    if (widget.activities.isNotEmpty) {
-      _selectedActivity = widget.activities.first;
+    // Set the selected activity to the first one that meets requirements
+    final availableActivities = widget.activities
+        .where((a) => a.meetsRequirements(widget.character.stats))
+        .toList();
+    if (availableActivities.isNotEmpty) {
+      _selectedActivity = availableActivities.first;
     }
   }
 
@@ -325,7 +316,7 @@ class _AddPlannedActivityDialogState extends State<AddPlannedActivityDialog> {
                 return DropdownMenuItem(
                   value: activity,
                   child: Text(
-                    '${activity.name} (${duration.toStringAsFixed(1)}s)',
+                    '${activity.name} (${formatDurationCompact(duration)})',
                   ),
                 );
               })
@@ -388,6 +379,9 @@ class _AddPlannedActivityDialogState extends State<AddPlannedActivityDialog> {
         suffixText: _targetType == PlanTargetType.completions ? 'x' : 's',
       ),
       keyboardType: TextInputType.number,
+      inputFormatters: [
+        FilteringTextInputFormatter.digitsOnly,
+      ],
     );
   }
 

@@ -1,0 +1,9 @@
+{
+  "mcpServers": {
+    "flutter": {
+      "type": "stdio",
+      "command": "dart",
+      "args": ["mcp-server"]
+    }
+  }
+}

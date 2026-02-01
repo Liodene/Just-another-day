@@ -9,7 +9,7 @@ void main() {
       expect(gameTime.hour, equals(8));
       expect(gameTime.minute, equals(0));
       expect(gameTime.dayCount, equals(1));
-      expect(gameTime.realTimePlayedMs, equals(0.0));
+      expect(gameTime.realTimePlayed, equals(Duration.zero));
       expect(gameTime.timeMultiplier, equals(300.0));
     });
 
@@ -30,7 +30,7 @@ void main() {
       final gameTime = GameTime(initialHour: 8, initialMinute: 0);
 
       // 1 real second = 300 game seconds = 5 game minutes
-      gameTime.update(1000); // 1000ms = 1 second real time
+      gameTime.update(const Duration(milliseconds: 1000)); // 1000ms = 1 second real time
 
       expect(gameTime.hour, equals(8));
       expect(gameTime.minute, equals(5));
@@ -39,13 +39,13 @@ void main() {
     test('should track real time played', () {
       final gameTime = GameTime();
 
-      gameTime.update(1000); // 1 second
-      expect(gameTime.realTimePlayedMs, equals(1000.0));
-      expect(gameTime.realTimePlayedSeconds, equals(1.0));
+      gameTime.update(const Duration(milliseconds: 1000)); // 1 second
+      expect(gameTime.realTimePlayed, equals(const Duration(milliseconds: 1000)));
+      expect(gameTime.realTimePlayed.inSeconds, equals(1));
 
-      gameTime.update(59000); // 59 more seconds
-      expect(gameTime.realTimePlayedMs, equals(60000.0));
-      expect(gameTime.realTimePlayedMinutes, equals(1.0));
+      gameTime.update(const Duration(milliseconds: 59000)); // 59 more seconds
+      expect(gameTime.realTimePlayed, equals(const Duration(milliseconds: 60000)));
+      expect(gameTime.realTimePlayed.inMinutes, equals(1));
     });
 
     test('should stop at 24:00 instead of rolling over', () {
@@ -56,7 +56,7 @@ void main() {
 
       // Advance 2 real seconds = 600 game seconds = 10 game minutes
       // 23:55 + 10 minutes would be 00:05, but should stop at 24:00
-      gameTime.update(2000);
+      gameTime.update(const Duration(milliseconds: 2000));
 
       expect(gameTime.dayCount, equals(1)); // Day doesn't change automatically
       expect(gameTime.isExpired, isTrue);
@@ -69,23 +69,23 @@ void main() {
       final gameTime = GameTime(initialHour: 23, initialMinute: 59);
 
       // Advance to 24:00
-      gameTime.update(1000); // 5 game minutes
+      gameTime.update(const Duration(milliseconds: 1000)); // 5 game minutes
 
       expect(gameTime.isExpired, isTrue);
-      final realTimeBeforeExpiry = gameTime.realTimePlayedMs;
+      final realTimeBeforeExpiry = gameTime.realTimePlayed;
 
       // Try to update more - should be ignored
-      gameTime.update(10000);
+      gameTime.update(const Duration(milliseconds: 10000));
 
       // Real time should not have been tracked after expiry
-      expect(gameTime.realTimePlayedMs, equals(realTimeBeforeExpiry));
+      expect(gameTime.realTimePlayed, equals(realTimeBeforeExpiry));
       expect(gameTime.isExpired, isTrue);
     });
 
     test('startNewDay should reset time and increment day count', () {
       // Start at 23:55 and expire
       final gameTime = GameTime(initialHour: 23, initialMinute: 55);
-      gameTime.update(2000); // Expire the day
+      gameTime.update(const Duration(milliseconds: 2000)); // Expire the day
       expect(gameTime.isExpired, isTrue);
       expect(gameTime.dayCount, equals(1));
 
@@ -100,7 +100,7 @@ void main() {
 
     test('startNewDay with custom time should work', () {
       final gameTime = GameTime(initialHour: 23, initialMinute: 55);
-      gameTime.update(2000); // Expire
+      gameTime.update(const Duration(milliseconds: 2000)); // Expire
       expect(gameTime.isExpired, isTrue);
 
       gameTime.startNewDay(initialHour: 6, initialMinute: 30);
@@ -112,21 +112,21 @@ void main() {
 
     test('should reset correctly', () {
       final gameTime = GameTime();
-      gameTime.update(10000);
+      gameTime.update(const Duration(milliseconds: 10000));
 
       gameTime.reset(initialHour: 12, initialMinute: 0);
 
       expect(gameTime.hour, equals(12));
       expect(gameTime.minute, equals(0));
       expect(gameTime.dayCount, equals(1));
-      expect(gameTime.realTimePlayedMs, equals(0.0));
+      expect(gameTime.realTimePlayed, equals(Duration.zero));
     });
 
     test('should work with custom time multiplier', () {
       // 1 real second = 60 game seconds = 1 game minute
       final gameTime = GameTime(timeMultiplier: 60.0, initialHour: 8);
 
-      gameTime.update(1000); // 1 real second
+      gameTime.update(const Duration(milliseconds: 1000)); // 1 real second
 
       expect(gameTime.hour, equals(8));
       expect(gameTime.minute, equals(1));

@@ -1,3 +1,4 @@
+import '../utils/time_utils.dart';
 import 'activity.dart';
 
 /// Defines how a planned activity's target is measured.
@@ -90,9 +91,9 @@ class PlannedActivity {
   }
 
   /// Records time spent on the activity.
-  void recordTimeSpent(double inGameSeconds) {
+  void recordTimeSpent(Duration inGameTime) {
     if (targetType == PlanTargetType.inGameTime) {
-      completedValue += inGameSeconds;
+      completedValue += inGameTime.inSeconds.toDouble();
     }
   }
 
@@ -129,25 +130,11 @@ class PlannedActivity {
         final completed = completedValue.toInt();
         return '$completed / $target completions';
       case PlanTargetType.inGameTime:
-        return '${_formatTime(completedValue)} / ${_formatTime(targetValue)}';
+        final completedDuration = Duration(seconds: completedValue.toInt());
+        final targetDuration = Duration(seconds: targetValue.toInt());
+        return '${formatDurationCompact(completedDuration)} / ${formatDurationCompact(targetDuration)}';
       case PlanTargetType.unlimited:
         return 'Unlimited';
-    }
-  }
-
-  /// Formats in-game seconds as a human-readable time string.
-  static String _formatTime(double seconds) {
-    final totalSeconds = seconds.toInt();
-    final hours = totalSeconds ~/ 3600;
-    final minutes = (totalSeconds % 3600) ~/ 60;
-    final secs = totalSeconds % 60;
-
-    if (hours > 0) {
-      return '${hours}h ${minutes}m';
-    } else if (minutes > 0) {
-      return '${minutes}m ${secs}s';
-    } else {
-      return '${secs}s';
     }
   }
 

@@ -71,21 +71,24 @@ class ActivityProgressCard extends StatelessWidget {
           style: Theme.of(context).textTheme.bodyLarge,
         ),
         const SizedBox(height: 8),
-        LinearProgressIndicator(value: progress!.progress),
+        Semantics(
+          label: 'Activity progress: ${(progress!.progress * 100).toStringAsFixed(1)}%',
+          child: LinearProgressIndicator(value: progress!.progress),
+        ),
         const SizedBox(height: 4),
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
             Text('${(progress!.progress * 100).toStringAsFixed(1)}%'),
-            Text('${progress!.remainingTime.toStringAsFixed(1)}s remaining'),
+            Text('${progress!.remainingTime.inSeconds}s remaining'),
           ],
         ),
         const SizedBox(height: 8),
         ElevatedButton(
           onPressed: onStopActivity,
           style: ElevatedButton.styleFrom(
-            backgroundColor: Colors.red,
-            foregroundColor: Colors.white,
+            backgroundColor: Theme.of(context).colorScheme.error,
+            foregroundColor: Theme.of(context).colorScheme.onError,
           ),
           child: const Text('Stop Activity'),
         ),

@@ -6,6 +6,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import '../models/character.dart';
 import '../models/game_time.dart';
+import 'activity_planner.dart';
 
 /// Represents a complete game save state.
 class GameSaveData {
@@ -16,6 +17,7 @@ class GameSaveData {
     required this.savedAt,
     required this.timezone,
     this.version = 1,
+    this.plannerQueue,
   });
 
   /// Creates a [GameSaveData] instance from a JSON map.
@@ -26,6 +28,7 @@ class GameSaveData {
       savedAt: DateTime.parse(json['savedAt'] as String),
       timezone: json['timezone'] as String? ?? 'UTC',
       version: (json['version'] as num?)?.toInt() ?? 1,
+      plannerQueue: json['plannerQueue'] as List<dynamic>?,
     );
   }
 
@@ -44,6 +47,9 @@ class GameSaveData {
   /// The save format version for future compatibility.
   final int version;
 
+  /// The activity planner queue (optional, for backward compatibility).
+  final List<dynamic>? plannerQueue;
+
   /// Converts this [GameSaveData] to a JSON map.
   Map<String, dynamic> toJson() {
     return {
@@ -52,6 +58,7 @@ class GameSaveData {
       'timezone': timezone,
       'character': character.toJson(),
       'gameTime': gameTime.toJson(),
+      if (plannerQueue != null) 'plannerQueue': plannerQueue,
     };
   }
 
@@ -95,6 +102,7 @@ class SaveManager extends ChangeNotifier {
   DateTime? _lastSaveTime;
   Character? _character;
   GameTime? _gameTime;
+  ActivityPlanner? _planner;
 
   /// Whether autosave is currently enabled.
   bool get isAutosaveEnabled => _isAutosaveEnabled;
@@ -103,9 +111,14 @@ class SaveManager extends ChangeNotifier {
   DateTime? get lastSaveTime => _lastSaveTime;
 
   /// Initializes the save manager with the game state references.
-  void initialize({required Character character, required GameTime gameTime}) {
+  void initialize({
+    required Character character,
+    required GameTime gameTime,
+    ActivityPlanner? planner,
+  }) {
     _character = character;
     _gameTime = gameTime;
+    _planner = planner;
   }
 
   /// Starts the autosave timer.
@@ -128,16 +141,6 @@ class SaveManager extends ChangeNotifier {
     notifyListeners();
   }
 
-  /// Gets the current timezone string.
-  String _getCurrentTimezone() {
-    final now = DateTime.now();
-    final offset = now.timeZoneOffset;
-    final hours = offset.inHours.abs().toString().padLeft(2, '0');
-    final minutes = (offset.inMinutes.abs() % 60).toString().padLeft(2, '0');
-    final sign = offset.isNegative ? '-' : '+';
-    return 'UTC$sign$hours:$minutes';
-  }
-
   /// Creates a save data object from the current game state.
   GameSaveData? _createSaveData() {
     if (_character == null || _gameTime == null) {
@@ -148,8 +151,9 @@ class SaveManager extends ChangeNotifier {
     return GameSaveData(
       character: _character!,
       gameTime: _gameTime!,
-      savedAt: DateTime.now(),
-      timezone: _getCurrentTimezone(),
+      savedAt: DateTime.now().toUtc(),
+      timezone: 'UTC',
+      plannerQueue: _planner?.toJson(),
     );
   }
 

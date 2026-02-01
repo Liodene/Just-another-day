@@ -126,20 +126,20 @@ void main() {
       expect(ticker1, equals(ticker2));
     });
 
-    test('should call callbacks with delta time in milliseconds', () {
-      final deltaTimes = <double>[];
+    test('should call callbacks with delta time as Duration', () {
+      final deltaTimes = <Duration>[];
       gameLoop.addCallback(deltaTimes.add);
       gameLoop.start();
 
       // First tick at 16ms
       tickerProvider.ticker!.advance(const Duration(milliseconds: 16));
       expect(deltaTimes.length, equals(1));
-      expect(deltaTimes[0], closeTo(16.0, 0.1));
+      expect(deltaTimes[0], equals(const Duration(milliseconds: 16)));
 
       // Second tick at 32ms (16ms delta)
       tickerProvider.ticker!.advance(const Duration(milliseconds: 16));
       expect(deltaTimes.length, equals(2));
-      expect(deltaTimes[1], closeTo(16.0, 0.1));
+      expect(deltaTimes[1], equals(const Duration(milliseconds: 16)));
     });
 
     test('should support multiple callbacks', () {
@@ -158,7 +158,7 @@ void main() {
 
     test('should remove callbacks', () {
       var callCount = 0;
-      void callback(double dt) => callCount++;
+      void callback(Duration dt) => callCount++;
 
       gameLoop.addCallback(callback);
       gameLoop.start();

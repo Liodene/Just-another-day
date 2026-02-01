@@ -187,10 +187,10 @@ void main() {
 
       planner.addPlannedActivity(planned);
 
-      var result = planner.recordTimeSpent(50);
+      var result = planner.recordTimeSpent(const Duration(seconds: 50));
       expect(result, isNull);
 
-      result = planner.recordTimeSpent(50);
+      result = planner.recordTimeSpent(const Duration(seconds: 50));
       expect(result, equals(planned));
       expect(planner.hasPlannedActivities, isFalse);
     });
@@ -205,9 +205,9 @@ void main() {
       planner.addPlannedActivity(planned);
 
       // Duration calculator that returns 10 seconds per completion
-      final estimate = planner.estimateTotalTime((_) => 10);
+      final estimate = planner.estimateTotalTime((_) => const Duration(seconds: 10));
 
-      expect(estimate, equals(30)); // 3 completions * 10 seconds
+      expect(estimate, equals(const Duration(seconds: 30))); // 3 completions * 10 seconds
     });
 
     test('should estimate total time for time-based', () {
@@ -219,9 +219,9 @@ void main() {
 
       planner.addPlannedActivity(planned);
 
-      final estimate = planner.estimateTotalTime((_) => 10);
+      final estimate = planner.estimateTotalTime((_) => const Duration(seconds: 10));
 
-      expect(estimate, equals(3600)); // Exact time target
+      expect(estimate, equals(const Duration(seconds: 3600))); // Exact time target
     });
 
     test('should return infinity for unlimited', () {
@@ -232,9 +232,9 @@ void main() {
 
       planner.addPlannedActivity(planned);
 
-      final estimate = planner.estimateTotalTime((_) => 10);
+      final estimate = planner.estimateTotalTime((_) => const Duration(seconds: 10));
 
-      expect(estimate, equals(double.infinity));
+      expect(estimate.inMicroseconds, equals(-1)); // Special value for infinity
     });
 
     test('should calculate partial progress correctly', () {
@@ -248,8 +248,8 @@ void main() {
       planner.addPlannedActivity(planned);
 
       // Remaining: 3 completions * 10 seconds
-      final estimate = planner.estimateTotalTime((_) => 10);
-      expect(estimate, equals(30));
+      final estimate = planner.estimateTotalTime((_) => const Duration(seconds: 10));
+      expect(estimate, equals(const Duration(seconds: 30)));
     });
 
     test('should serialize and restore state', () {

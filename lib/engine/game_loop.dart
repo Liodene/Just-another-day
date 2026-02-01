@@ -1,8 +1,8 @@
 import 'package:flutter/scheduler.dart';
 
 /// Callback function type for game loop updates.
-/// [deltaTime] is the time elapsed since the last frame in milliseconds.
-typedef GameLoopCallback = void Function(double deltaTime);
+/// [deltaTime] is the time elapsed since the last frame.
+typedef GameLoopCallback = void Function(Duration deltaTime);
 
 /// A game loop engine based on Flutter's [Ticker].
 ///
@@ -32,6 +32,12 @@ class GameLoop {
   final List<GameLoopCallback> _callbacks = [];
   bool _isRunning = false;
 
+  /// Maximum delta time per frame.
+  /// Prevents huge time skips when tab is backgrounded or after pause.
+  /// Set to 5 seconds to allow for reasonable test time jumps while still
+  /// capping extreme background tab scenarios.
+  static const Duration maxDeltaDuration = Duration(seconds: 5);
+
   /// Whether the game loop is currently running.
   bool get isRunning => _isRunning;
 
@@ -40,7 +46,7 @@ class GameLoop {
 
   /// Adds a callback to be called on each frame.
   ///
-  /// The callback receives the delta time in milliseconds since the last frame.
+  /// The callback receives the delta time since the last frame.
   /// Returns a function that can be called to remove the callback.
   VoidCallback addCallback(GameLoopCallback callback) {
     _callbacks.add(callback);
@@ -105,9 +111,18 @@ class GameLoop {
   }
 
   void _onTick(Duration elapsed) {
-    // Calculate delta time in milliseconds
-    final deltaTime = (elapsed - _lastElapsed).inMicroseconds / 1000.0;
+    // Calculate delta time
+    var deltaTime = elapsed - _lastElapsed;
     _lastElapsed = elapsed;
+
+    // Cap delta time to prevent huge skips (e.g., when tab is backgrounded
+    // or after resuming from pause)
+    if (deltaTime > maxDeltaDuration) {
+      deltaTime = maxDeltaDuration;
+    }
+    if (deltaTime < Duration.zero) {
+      deltaTime = Duration.zero;
+    }
 
     // Call all registered callbacks
     // Create a copy to allow callbacks to modify the list

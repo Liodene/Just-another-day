@@ -68,12 +68,12 @@ void main() {
         targetValue: 100,
       );
 
-      planned.recordTimeSpent(30);
+      planned.recordTimeSpent(const Duration(seconds: 30));
       expect(planned.completedValue, equals(30));
       expect(planned.progress, closeTo(0.3, 0.01));
       expect(planned.remainingValue, equals(70));
 
-      planned.recordTimeSpent(70);
+      planned.recordTimeSpent(const Duration(seconds: 70));
       expect(planned.completedValue, equals(100));
       expect(planned.isComplete, isTrue);
     });
@@ -96,7 +96,7 @@ void main() {
         targetValue: 5,
       );
 
-      planned.recordTimeSpent(100);
+      planned.recordTimeSpent(const Duration(seconds: 100));
       expect(planned.completedValue, equals(0));
     });
 

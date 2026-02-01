@@ -16,23 +16,26 @@ class GameTimeDisplay extends StatelessWidget {
         color: Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(8),
       ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          const Icon(Icons.calendar_today, size: 16),
-          const SizedBox(width: 4),
-          Text(
-            'Day ${gameTime.dayCount}',
-            style: Theme.of(context).textTheme.bodyMedium,
-          ),
-          const SizedBox(width: 12),
-          const Icon(Icons.access_time, size: 16),
-          const SizedBox(width: 4),
-          Text(
-            gameTime.formattedTime,
-            style: Theme.of(context).textTheme.bodyMedium,
-          ),
-        ],
+      child: Semantics(
+        label: 'Day ${gameTime.dayCount}, Time: ${gameTime.formattedTime}',
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Icon(Icons.calendar_today, size: 16),
+            const SizedBox(width: 4),
+            Text(
+              'Day ${gameTime.dayCount}',
+              style: Theme.of(context).textTheme.bodyMedium,
+            ),
+            const SizedBox(width: 12),
+            const Icon(Icons.access_time, size: 16),
+            const SizedBox(width: 4),
+            Text(
+              gameTime.formattedTime,
+              style: Theme.of(context).textTheme.bodyMedium,
+            ),
+          ],
+        ),
       ),
     );
   }

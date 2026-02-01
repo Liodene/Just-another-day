@@ -27,8 +27,8 @@ class Activity {
   /// Description of what the activity involves.
   final String description;
 
-  /// Base duration in seconds to complete the activity.
-  final double baseDuration;
+  /// Base duration to complete the activity.
+  final Duration baseDuration;
 
   /// Difficulty level (1-100). Higher difficulty means slower progress.
   final double difficulty;
@@ -52,14 +52,15 @@ class Activity {
   ///
   /// The [difficultyCoefficient] is 1.10 per level (1.10^(level-1)).
   /// The duration is clamped to be at least 10% of the base duration.
-  double calculateDuration(
+  Duration calculateDuration(
     CharacterStats stats, {
     double difficultyCoefficient = 1.0,
   }) {
     final statValue = stats.getStat(primaryStat);
     final effectiveDifficulty = difficulty * difficultyCoefficient;
     final multiplier = (effectiveDifficulty / statValue).clamp(0.1, 10.0);
-    return baseDuration * multiplier;
+    final seconds = (baseDuration.inMicroseconds * multiplier).round();
+    return Duration(microseconds: seconds);
   }
 
   /// Checks if the character meets the requirements for this activity.
@@ -76,7 +77,7 @@ class Activity {
 
   @override
   String toString() =>
-      'Activity($name, duration: $baseDuration, difficulty: $difficulty)';
+      'Activity($name, duration: ${baseDuration.inSeconds}s, difficulty: $difficulty)';
 }
 
 /// Represents the current progress of an activity.
@@ -85,32 +86,36 @@ class ActivityProgress {
   ActivityProgress({
     required this.activity,
     required this.totalDuration,
-    this.elapsedTime = 0.0,
-  });
+    Duration? elapsedTime,
+  }) : elapsedTime = elapsedTime ?? Duration.zero;
 
   /// The activity being performed.
   final Activity activity;
 
   /// Total duration needed to complete (calculated from character stats).
-  final double totalDuration;
+  final Duration totalDuration;
 
-  /// Time elapsed so far in seconds.
-  double elapsedTime;
+  /// Time elapsed so far.
+  Duration elapsedTime;
 
   /// Progress percentage (0.0 to 1.0).
-  double get progress => (elapsedTime / totalDuration).clamp(0.0, 1.0);
+  double get progress =>
+      (elapsedTime.inMicroseconds / totalDuration.inMicroseconds)
+          .clamp(0.0, 1.0);
 
   /// Whether the activity is complete.
   bool get isComplete => elapsedTime >= totalDuration;
 
-  /// Remaining time in seconds.
-  double get remainingTime =>
-      (totalDuration - elapsedTime).clamp(0.0, totalDuration);
+  /// Remaining time.
+  Duration get remainingTime =>
+      totalDuration - elapsedTime < Duration.zero
+          ? Duration.zero
+          : totalDuration - elapsedTime;
 
   /// Updates the progress by adding delta time.
   ///
   /// Returns true if the activity just completed.
-  bool update(double deltaTime) {
+  bool update(Duration deltaTime) {
     if (isComplete) return false;
 
     elapsedTime += deltaTime;
@@ -130,7 +135,7 @@ class Activities {
     id: 'working',
     name: 'Working',
     description: 'Work a job to earn experience and improve your endurance.',
-    baseDuration: 10.0,
+    baseDuration: Duration(seconds: 10),
     difficulty: 0.5,
     primaryStat: StatType.endurance,
     rewards: {StatType.endurance: 0.1, StatType.charisma: 0.05},
@@ -140,7 +145,7 @@ class Activities {
     id: 'studying',
     name: 'Studying',
     description: 'Study to improve your intelligence.',
-    baseDuration: 15.0,
+    baseDuration: Duration(seconds: 15),
     difficulty: 0.8,
     primaryStat: StatType.intelligence,
     rewards: {StatType.intelligence: 0.15},
@@ -150,7 +155,7 @@ class Activities {
     id: 'exercising',
     name: 'Exercising',
     description: 'Work out to improve your strength and agility.',
-    baseDuration: 8.0,
+    baseDuration: Duration(seconds: 8),
     difficulty: 0.6,
     primaryStat: StatType.strength,
     rewards: {
@@ -164,7 +169,7 @@ class Activities {
     id: 'sparring',
     name: 'Sparring',
     description: 'Practice combat to improve fighting abilities.',
-    baseDuration: 12.0,
+    baseDuration: Duration(seconds: 12),
     difficulty: 1.0,
     primaryStat: StatType.agility,
     requirements: {StatType.strength: 3.0},
@@ -175,7 +180,7 @@ class Activities {
     id: 'socializing',
     name: 'Socializing',
     description: 'Spend time with others to improve your charisma.',
-    baseDuration: 5.0,
+    baseDuration: Duration(seconds: 5),
     difficulty: 0.3,
     primaryStat: StatType.charisma,
     rewards: {StatType.charisma: 0.1},

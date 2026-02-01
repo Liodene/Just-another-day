@@ -328,7 +328,7 @@ void main() {
       // Completion 3: coef=1.21, dur = 10 * (0.5*1.21/1.0) = 6.05s
       // Total = 5.0 + 5.5 + 6.05 = 16.55s
       final estimate = activityManager.estimatePlanTime();
-      expect(estimate, closeTo(16.55, 0.1));
+      expect(estimate.inMicroseconds / 1000000, closeTo(16.55, 0.1));
     });
 
     test('should handle existing completions in estimation', () {
@@ -349,7 +349,7 @@ void main() {
       // Completion 1: coef=1.21, dur = 10 * (0.5*1.21/1.0) = 6.05s
       // Completion 2: coef=1.331, dur = 10 * (0.5*1.331/1.0) = 6.655s
       final estimate = activityManager.estimatePlanTime();
-      expect(estimate, closeTo(12.7, 0.2));
+      expect(estimate.inMicroseconds / 1000000, closeTo(12.7, 0.2));
     });
 
     test('should estimate time-based targets simply', () {
@@ -364,7 +364,7 @@ void main() {
       // For time-based targets, the estimate is simply the target time
       // (simplified since stats don't evolve during the day)
       final estimate = activityManager.estimatePlanTime();
-      expect(estimate, equals(15));
+      expect(estimate, equals(const Duration(seconds: 15)));
     });
 
     test('should handle multiple planned activities', () {
@@ -388,8 +388,8 @@ void main() {
       final estimate = activityManager.estimatePlanTime();
 
       // Estimation only considers difficulty increases, not stat changes
-      expect(estimate, greaterThan(0));
-      expect(estimate.isFinite, isTrue);
+      expect(estimate, greaterThan(Duration.zero));
+      expect(estimate.inMicroseconds, isPositive);
     });
 
     test('should return infinity for unlimited activities', () {
@@ -401,12 +401,12 @@ void main() {
       activityManager.planner.addPlannedActivity(planned);
 
       final estimate = activityManager.estimatePlanTime();
-      expect(estimate, equals(double.infinity));
+      expect(estimate, equals(const Duration(days: 365 * 100))); // Effectively infinite
     });
 
     test('should return 0 for empty plan', () {
       final estimate = activityManager.estimatePlanTime();
-      expect(estimate, equals(0));
+      expect(estimate, equals(Duration.zero));
     });
   });
 
@@ -759,7 +759,7 @@ void main() {
     test('should not process activities after day expires', () {
       // Create game time already expired
       final gameTime = GameTime(initialHour: 23, initialMinute: 59);
-      gameTime.update(1000); // Expire the day
+      gameTime.update(const Duration(milliseconds: 1000)); // Expire the day
 
       activityManager = ActivityManager(
         character: character,

@@ -11,7 +11,7 @@ void main() {
         id: 'test',
         name: 'Test Activity',
         description: 'A test activity',
-        baseDuration: 10.0,
+        baseDuration: Duration(seconds: 10),
         difficulty: 0.5,
         primaryStat: StatType.strength,
         rewards: {StatType.strength: 0.5, StatType.endurance: 0.2},
@@ -21,42 +21,42 @@ void main() {
     test('calculateDuration should scale with character stats', () {
       // With strength = 1, difficulty = 0.5: duration = 10 * (0.5/1) = 5
       final weakStats = CharacterStats(strength: 1.0);
-      expect(testActivity.calculateDuration(weakStats), equals(5.0));
+      expect(testActivity.calculateDuration(weakStats), equals(const Duration(seconds: 5)));
 
       // With strength = 5, difficulty = 0.5: multiplier = 0.5/5 = 0.1 (clamped), duration = 10 * 0.1 = 1
       final matchedStats = CharacterStats(strength: 5.0);
-      expect(testActivity.calculateDuration(matchedStats), equals(1.0));
+      expect(testActivity.calculateDuration(matchedStats), equals(const Duration(seconds: 1)));
 
       // With strength = 10, difficulty = 0.5: multiplier = 0.5/10 = 0.05 (clamped to 0.1), duration = 10 * 0.1 = 1
       final strongStats = CharacterStats(strength: 10.0);
-      expect(testActivity.calculateDuration(strongStats), equals(1.0));
+      expect(testActivity.calculateDuration(strongStats), equals(const Duration(seconds: 1)));
     });
 
     test('calculateDuration should clamp multiplier', () {
       // Very high stats should not reduce below 10% of base
       final veryStrongStats = CharacterStats(strength: 100.0);
       final duration = testActivity.calculateDuration(veryStrongStats);
-      expect(duration, greaterThanOrEqualTo(1.0)); // 10% of 10
+      expect(duration, greaterThanOrEqualTo(const Duration(seconds: 1))); // 10% of 10
     });
 
     test('calculateDuration should apply difficulty coefficient', () {
       final stats = CharacterStats(strength: 0.5);
 
       // Without coefficient (default 1.0): duration = 10 * (0.5/0.5) = 10
-      expect(testActivity.calculateDuration(stats), equals(10.0));
+      expect(testActivity.calculateDuration(stats), equals(const Duration(seconds: 10)));
 
       // With coefficient 1.1: effectiveDiff = 0.5 * 1.1 = 0.55
       // duration = 10 * (0.55/0.5) = 11
       expect(
         testActivity.calculateDuration(stats, difficultyCoefficient: 1.1),
-        equals(11.0),
+        equals(const Duration(seconds: 11)),
       );
 
       // With coefficient 2.0: effectiveDiff = 0.5 * 2.0 = 1.0
       // duration = 10 * (1.0/0.5) = 20
       expect(
         testActivity.calculateDuration(stats, difficultyCoefficient: 2.0),
-        equals(20.0),
+        equals(const Duration(seconds: 20)),
       );
     });
 
@@ -65,7 +65,7 @@ void main() {
         id: 'advanced',
         name: 'Advanced',
         description: 'Requires high stats',
-        baseDuration: 10.0,
+        baseDuration: Duration(seconds: 10),
         difficulty: 1.0,
         primaryStat: StatType.strength,
         rewards: {},
@@ -109,7 +109,7 @@ void main() {
         id: 'test',
         name: 'Test',
         description: 'Test',
-        baseDuration: 10.0,
+        baseDuration: Duration(seconds: 10),
         difficulty: 0.5,
         primaryStat: StatType.strength,
         rewards: {},
@@ -119,10 +119,10 @@ void main() {
     test('should start with zero elapsed time', () {
       final progress = ActivityProgress(
         activity: testActivity,
-        totalDuration: 10.0,
+        totalDuration: const Duration(seconds: 10),
       );
 
-      expect(progress.elapsedTime, equals(0.0));
+      expect(progress.elapsedTime, equals(Duration.zero));
       expect(progress.progress, equals(0.0));
       expect(progress.isComplete, isFalse);
     });
@@ -130,25 +130,25 @@ void main() {
     test('update should advance elapsed time', () {
       final progress = ActivityProgress(
         activity: testActivity,
-        totalDuration: 10.0,
+        totalDuration: const Duration(seconds: 10),
       );
 
-      progress.update(2.5);
-      expect(progress.elapsedTime, equals(2.5));
+      progress.update(const Duration(milliseconds: 2500));
+      expect(progress.elapsedTime, equals(const Duration(milliseconds: 2500)));
       expect(progress.progress, closeTo(0.25, 0.001));
     });
 
     test('update should return true when completing', () {
       final progress = ActivityProgress(
         activity: testActivity,
-        totalDuration: 10.0,
+        totalDuration: const Duration(seconds: 10),
       );
 
-      var completed = progress.update(5.0);
+      var completed = progress.update(const Duration(seconds: 5));
       expect(completed, isFalse);
       expect(progress.isComplete, isFalse);
 
-      completed = progress.update(5.0);
+      completed = progress.update(const Duration(seconds: 5));
       expect(completed, isTrue);
       expect(progress.isComplete, isTrue);
     });
@@ -156,26 +156,26 @@ void main() {
     test('progress should be clamped to 1.0', () {
       final progress = ActivityProgress(
         activity: testActivity,
-        totalDuration: 10.0,
+        totalDuration: const Duration(seconds: 10),
       );
 
-      progress.update(15.0);
+      progress.update(const Duration(seconds: 15));
       expect(progress.progress, equals(1.0));
     });
 
     test('remainingTime should decrease', () {
       final progress = ActivityProgress(
         activity: testActivity,
-        totalDuration: 10.0,
+        totalDuration: const Duration(seconds: 10),
       );
 
-      expect(progress.remainingTime, equals(10.0));
+      expect(progress.remainingTime, equals(const Duration(seconds: 10)));
 
-      progress.update(3.0);
-      expect(progress.remainingTime, equals(7.0));
+      progress.update(const Duration(seconds: 3));
+      expect(progress.remainingTime, equals(const Duration(seconds: 7)));
 
-      progress.update(7.0);
-      expect(progress.remainingTime, equals(0.0));
+      progress.update(const Duration(seconds: 7));
+      expect(progress.remainingTime, equals(Duration.zero));
     });
   });
 
@@ -198,7 +198,7 @@ void main() {
         expect(activity.id, isNotEmpty);
         expect(activity.name, isNotEmpty);
         expect(activity.description, isNotEmpty);
-        expect(activity.baseDuration, greaterThan(0));
+        expect(activity.baseDuration, greaterThan(Duration.zero));
         expect(activity.difficulty, greaterThan(0));
         expect(activity.rewards, isNotEmpty);
       }

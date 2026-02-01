@@ -28,24 +28,26 @@ class ActivityPlanner extends ChangeNotifier {
       currentPlanned?.targetType == PlanTargetType.unlimited;
 
   /// Total estimated in-game time for all planned activities.
-  /// Returns infinity if any activity is unlimited.
-  double estimateTotalTime(
-    double Function(Activity activity) durationCalculator,
+  /// Returns a Duration with microseconds set to -1 if any activity is unlimited
+  /// (checked via duration.isNegative).
+  Duration estimateTotalTime(
+    Duration Function(Activity activity) durationCalculator,
   ) {
-    var total = 0.0;
+    var total = Duration.zero;
     for (final planned in _queue) {
       if (planned.targetType == PlanTargetType.unlimited) {
-        return double.infinity;
+        return const Duration(microseconds: -1); // Represents infinity
       }
       final duration = durationCalculator(planned.activity);
       switch (planned.targetType) {
         case PlanTargetType.completions:
           // Remaining completions times duration per completion
           final remaining = planned.targetValue - planned.completedValue;
-          total += remaining * duration;
+          total += duration * remaining;
         case PlanTargetType.inGameTime:
-          // Remaining time
-          total += planned.targetValue - planned.completedValue;
+          // Remaining time (targetValue and completedValue are in seconds)
+          final remainingSeconds = planned.targetValue - planned.completedValue;
+          total += Duration(seconds: remainingSeconds.toInt());
         case PlanTargetType.unlimited:
           // Already handled above
           break;
@@ -112,11 +114,11 @@ class ActivityPlanner extends ChangeNotifier {
   ///
   /// If the current activity's target is reached, moves to the next one.
   /// Returns the activity that completed its plan target, or null if none.
-  PlannedActivity? recordTimeSpent(double inGameSeconds) {
+  PlannedActivity? recordTimeSpent(Duration inGameTime) {
     if (_queue.isEmpty) return null;
 
     final current = _queue.first;
-    current.recordTimeSpent(inGameSeconds);
+    current.recordTimeSpent(inGameTime);
 
     if (current.isComplete) {
       _queue.removeAt(0);

@@ -1,0 +1,16 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(dart --version:*)",
+      "Bash(flutter --version:*)",
+      "Bash(dart pub global:*)",
+      "Bash(findstr:*)",
+      "Bash(flutter analyze:*)",
+      "Bash(flutter test:*)",
+      "Bash(dart test:*)",
+      "mcp__flutter__analyze_files",
+      "mcp__flutter__run_tests",
+      "Bash(dart analyze:*)"
+    ]
+  }
+}

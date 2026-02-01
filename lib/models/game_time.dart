@@ -2,35 +2,40 @@
 ///
 /// The in-game clock runs at [timeMultiplier] speed relative to real time.
 /// By default, 1 real second = 300 in-game seconds (5 in-game minutes).
-/// Time stops at 24:00 (86400 seconds) and must be manually reset via
-/// [startNewDay] to continue.
+/// Time stops at 24:00 and must be manually reset via [startNewDay] to continue.
 class GameTime {
   /// Creates a new [GameTime] instance.
   GameTime({
     this.timeMultiplier = 300.0,
     int initialHour = 8,
     int initialMinute = 0,
-  }) : _inGameSeconds = (initialHour * 3600 + initialMinute * 60).toDouble(),
-       _dayCount = 1,
-       _realTimePlayedMs = 0.0;
+  })  : _inGameTime = Duration(
+            seconds: initialHour * 3600 + initialMinute * 60,
+          ),
+        _dayCount = 1,
+        _realTimePlayed = Duration.zero;
 
   /// Creates a [GameTime] instance with direct internal state.
   GameTime._internal({
     required this.timeMultiplier,
-    required double inGameSeconds,
+    required Duration inGameTime,
     required int dayCount,
-    required double realTimePlayedMs,
-  }) : _inGameSeconds = inGameSeconds,
-       _dayCount = dayCount,
-       _realTimePlayedMs = realTimePlayedMs;
+    required Duration realTimePlayed,
+  })  : _inGameTime = inGameTime,
+        _dayCount = dayCount,
+        _realTimePlayed = realTimePlayed;
 
   /// Creates a [GameTime] instance from a JSON map.
   factory GameTime.fromJson(Map<String, dynamic> json) {
     return GameTime._internal(
       timeMultiplier: (json['timeMultiplier'] as num?)?.toDouble() ?? 300.0,
-      inGameSeconds: (json['inGameSeconds'] as num?)?.toDouble() ?? 28800.0,
+      inGameTime: Duration(
+        seconds: (json['inGameSeconds'] as num?)?.toInt() ?? 28800,
+      ),
       dayCount: (json['dayCount'] as num?)?.toInt() ?? 1,
-      realTimePlayedMs: (json['realTimePlayedMs'] as num?)?.toDouble() ?? 0.0,
+      realTimePlayed: Duration(
+        milliseconds: (json['realTimePlayedMs'] as num?)?.toInt() ?? 0,
+      ),
     );
   }
 
@@ -38,9 +43,9 @@ class GameTime {
   Map<String, dynamic> toJson() {
     return {
       'timeMultiplier': timeMultiplier,
-      'inGameSeconds': _inGameSeconds,
+      'inGameSeconds': _inGameTime.inSeconds,
       'dayCount': _dayCount,
-      'realTimePlayedMs': _realTimePlayedMs,
+      'realTimePlayedMs': _realTimePlayed.inMilliseconds,
     };
   }
 
@@ -48,44 +53,35 @@ class GameTime {
   /// Default: 300 (1 real second = 300 in-game seconds = 5 in-game minutes).
   final double timeMultiplier;
 
-  /// In-game time in seconds since midnight (0-86400).
-  double _inGameSeconds;
+  /// In-game time since midnight (0 to maxDayDuration).
+  Duration _inGameTime;
 
   /// Number of days since game start.
   int _dayCount;
 
-  /// Total real time played in milliseconds (not displayed).
-  double _realTimePlayedMs;
+  /// Total real time played.
+  Duration _realTimePlayed;
 
-  /// The maximum in-game seconds in a day (24:00 = 86400 seconds).
-  static const double maxDaySeconds = 86400.0;
+  /// The maximum duration in a day (24 hours).
+  static const Duration maxDayDuration = Duration(hours: 24);
 
   /// Current in-game hour (0-24). Returns 24 when day is expired.
-  int get hour => isExpired ? 24 : (_inGameSeconds ~/ 3600) % 24;
+  int get hour => isExpired ? 24 : (_inGameTime.inSeconds ~/ 3600) % 24;
 
   /// Current in-game minute (0-59). Returns 0 when day is expired.
-  int get minute => isExpired ? 0 : (_inGameSeconds ~/ 60).toInt() % 60;
+  int get minute => isExpired ? 0 : (_inGameTime.inSeconds ~/ 60) % 60;
 
   /// Current in-game second (0-59). Returns 0 when day is expired.
-  int get second => isExpired ? 0 : _inGameSeconds.toInt() % 60;
+  int get second => isExpired ? 0 : _inGameTime.inSeconds % 60;
 
   /// Whether the day has expired (reached 24:00).
-  bool get isExpired => _inGameSeconds >= maxDaySeconds;
+  bool get isExpired => _inGameTime >= maxDayDuration;
 
   /// Current day count since game start.
   int get dayCount => _dayCount;
 
-  /// Total real time played in milliseconds.
-  double get realTimePlayedMs => _realTimePlayedMs;
-
-  /// Total real time played in seconds.
-  double get realTimePlayedSeconds => _realTimePlayedMs / 1000.0;
-
-  /// Total real time played in minutes.
-  double get realTimePlayedMinutes => _realTimePlayedMs / 60000.0;
-
-  /// Total real time played in hours.
-  double get realTimePlayedHours => _realTimePlayedMs / 3600000.0;
+  /// Total real time played.
+  Duration get realTimePlayed => _realTimePlayed;
 
   /// Formatted in-game time string (HH:MM).
   String get formattedTime {
@@ -104,23 +100,25 @@ class GameTime {
 
   /// Updates the game time based on real time elapsed.
   ///
-  /// [realDeltaTimeMs] is the real time elapsed in milliseconds.
-  /// Time will stop at 24:00 (86400 seconds) and will not roll over.
+  /// [realDeltaTime] is the real time elapsed.
+  /// Time will stop at 24:00 and will not roll over.
   /// Use [startNewDay] to advance to the next day.
-  void update(double realDeltaTimeMs) {
+  void update(Duration realDeltaTime) {
     // Don't update if day is already expired
     if (isExpired) return;
 
     // Track real time played
-    _realTimePlayedMs += realDeltaTimeMs;
+    _realTimePlayed += realDeltaTime;
 
     // Convert to in-game time
-    final inGameDeltaSeconds = (realDeltaTimeMs / 1000.0) * timeMultiplier;
-    _inGameSeconds += inGameDeltaSeconds;
+    final inGameDelta = Duration(
+      microseconds: (realDeltaTime.inMicroseconds * timeMultiplier).round(),
+    );
+    _inGameTime += inGameDelta;
 
     // Cap at 24:00 instead of rolling over
-    if (_inGameSeconds >= maxDaySeconds) {
-      _inGameSeconds = maxDaySeconds;
+    if (_inGameTime >= maxDayDuration) {
+      _inGameTime = maxDayDuration;
     }
   }
 
@@ -129,26 +127,33 @@ class GameTime {
   /// This increments the day count and resets the in-game time.
   /// Should be called after the day end modal is dismissed.
   void startNewDay({int initialHour = 8, int initialMinute = 0}) {
-    _inGameSeconds = (initialHour * 3600 + initialMinute * 60).toDouble();
+    _inGameTime = Duration(
+      seconds: initialHour * 3600 + initialMinute * 60,
+    );
     _dayCount++;
   }
 
   /// Resets the game time to the initial state.
   void reset({int initialHour = 8, int initialMinute = 0}) {
-    _inGameSeconds = (initialHour * 3600 + initialMinute * 60).toDouble();
+    _inGameTime = Duration(
+      seconds: initialHour * 3600 + initialMinute * 60,
+    );
     _dayCount = 1;
-    _realTimePlayedMs = 0.0;
+    _realTimePlayed = Duration.zero;
   }
 
   /// Restores state from another GameTime instance (used when loading a save).
   void restoreFrom(GameTime other) {
-    _inGameSeconds = other._inGameSeconds;
+    _inGameTime = other._inGameTime;
     _dayCount = other._dayCount;
-    _realTimePlayedMs = other._realTimePlayedMs;
+    _realTimePlayed = other._realTimePlayed;
   }
 
-  /// Gets the internal in-game seconds value.
-  double get inGameSeconds => _inGameSeconds;
+  /// Gets the internal in-game time as a Duration.
+  Duration get inGameTime => _inGameTime;
+
+  /// Gets the internal in-game time in seconds (for compatibility).
+  double get inGameSeconds => _inGameTime.inSeconds.toDouble();
 
   @override
   String toString() => 'GameTime(Day $_dayCount, $formattedTime)';

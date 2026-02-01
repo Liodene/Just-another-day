@@ -6,6 +6,7 @@ import 'engine/save_manager.dart';
 import 'models/activity.dart';
 import 'models/character.dart';
 import 'models/game_time.dart';
+import 'models/offline_progress.dart';
 import 'models/planned_activity.dart';
 import 'theme/theme.dart';
 import 'widgets/widgets.dart';
@@ -71,6 +72,7 @@ class _GameScreenState extends State<GameScreen>
   late final SaveManager _saveManager;
   late final GameTime _gameTime;
   bool _isLoading = true;
+  bool _isDayEndDialogShowing = false;
 
   @override
   void initState() {
@@ -94,10 +96,14 @@ class _GameScreenState extends State<GameScreen>
 
     // Initialize save manager
     _saveManager = SaveManager();
-    _saveManager.initialize(character: _character, gameTime: _gameTime);
+    _saveManager.initialize(
+      character: _character,
+      gameTime: _gameTime,
+      planner: _activityManager.planner,
+    );
 
-    // Listen to activity manager changes
-    _activityManager.addListener(_onActivityManagerChanged);
+    // Listen to activity manager changes (only rebuild when needed)
+    // We don't use addListener here to avoid full rebuilds every frame
 
     // Set up day expired callback
     _activityManager.onDayExpired = _onDayExpired;
@@ -107,22 +113,67 @@ class _GameScreenState extends State<GameScreen>
   }
 
   Future<void> _initializeGame() async {
-    // Try to load existing save
-    final saveData = await _saveManager.load();
-    if (saveData != null) {
-      _character.restoreFrom(saveData.character);
-      _gameTime.restoreFrom(saveData.gameTime);
+    try {
+      // Try to load existing save
+      final saveData = await _saveManager.load();
+      if (saveData != null) {
+        _character.restoreFrom(saveData.character);
+        _gameTime.restoreFrom(saveData.gameTime);
+        // Restore planner queue if available
+        if (saveData.plannerQueue != null) {
+          _activityManager.planner.restoreFromJson(saveData.plannerQueue!);
+        }
+
+        // Check for offline progress
+        final offlineProgress = OfflineProgressData.calculate(
+          saveData.savedAt,
+          _gameTime,
+          _character,
+          timeMultiplier: _gameTime.timeMultiplier,
+        );
+
+        if (offlineProgress != null) {
+          // Schedule modal to show after first frame
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            _showOfflineProgressModal(offlineProgress);
+          });
+        }
+      }
+
+      // Start autosave (every 30 seconds)
+      _saveManager.startAutosave();
+
+      // Start the game loop
+      _gameLoop.start();
+
+      setState(() {
+        _isLoading = false;
+      });
+    } catch (e) {
+      // If loading fails, show error and start fresh
+      debugPrint('Error initializing game: $e');
+
+      // Start autosave and game loop anyway
+      _saveManager.startAutosave();
+      _gameLoop.start();
+
+      setState(() {
+        _isLoading = false;
+      });
     }
+  }
 
-    // Start autosave (every 30 seconds)
-    _saveManager.startAutosave();
-
-    // Start the game loop
-    _gameLoop.start();
-
-    setState(() {
-      _isLoading = false;
-    });
+  void _showOfflineProgressModal(OfflineProgressData progressData) {
+    showDialog<void>(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => OfflineProgressModal(
+        progressData: progressData,
+        onContinue: () {
+          Navigator.of(context).pop();
+        },
+      ),
+    );
   }
 
   void _handleImport(GameSaveData saveData) {
@@ -133,6 +184,10 @@ class _GameScreenState extends State<GameScreen>
     // Restore state
     _character.restoreFrom(saveData.character);
     _gameTime.restoreFrom(saveData.gameTime);
+    // Restore planner queue if available
+    if (saveData.plannerQueue != null) {
+      _activityManager.planner.restoreFromJson(saveData.plannerQueue!);
+    }
 
     // Save immediately after import
     _saveManager.save();
@@ -143,15 +198,14 @@ class _GameScreenState extends State<GameScreen>
     setState(() {});
   }
 
-  void _onActivityManagerChanged() {
-    setState(() {});
-  }
-
   void _onDayExpired(Map<StatType, double> dailyGains) {
-    // Show the day end modal
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      _showDayEndModal(dailyGains);
-    });
+    // Show the day end modal (only once)
+    if (!_isDayEndDialogShowing) {
+      _isDayEndDialogShowing = true;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _showDayEndModal(dailyGains);
+      });
+    }
   }
 
   void _showDayEndModal(Map<StatType, double> dailyGains) {
@@ -163,6 +217,7 @@ class _GameScreenState extends State<GameScreen>
         dailyGains: dailyGains,
         onStartNewDay: () {
           _activityManager.startNewDay();
+          _isDayEndDialogShowing = false;
         },
       ),
     );
@@ -194,7 +249,6 @@ class _GameScreenState extends State<GameScreen>
 
   @override
   void dispose() {
-    _activityManager.removeListener(_onActivityManagerChanged);
     _activityManager.dispose();
     _saveManager.dispose();
     _gameLoop.dispose();
@@ -241,20 +295,26 @@ class _GameScreenState extends State<GameScreen>
                   children: [
                     StatsCard(character: _character),
                     const SizedBox(height: 16),
-                    ActivityProgressCard(
-                      progress: _activityManager.currentProgress,
-                      autoRepeat: _activityManager.autoRepeat,
-                      onAutoRepeatChanged: (value) {
-                        _activityManager.autoRepeat = value;
-                      },
-                      onStopActivity: _activityManager.stopActivity,
+                    ListenableBuilder(
+                      listenable: _activityManager,
+                      builder: (context, child) => ActivityProgressCard(
+                        progress: _activityManager.currentProgress,
+                        autoRepeat: _activityManager.autoRepeat,
+                        onAutoRepeatChanged: (value) {
+                          _activityManager.autoRepeat = value;
+                        },
+                        onStopActivity: _activityManager.stopActivity,
+                      ),
                     ),
                     const SizedBox(height: 16),
-                    ActivityPlannerCard(
-                      activityManager: _activityManager,
-                      character: _character,
-                      onAddActivity: _showAddPlannedActivityDialog,
-                      onCancelPlan: _showCancelPlanDialog,
+                    ListenableBuilder(
+                      listenable: _activityManager,
+                      builder: (context, child) => ActivityPlannerCard(
+                        activityManager: _activityManager,
+                        character: _character,
+                        onAddActivity: _showAddPlannedActivityDialog,
+                        onCancelPlan: _showCancelPlanDialog,
+                      ),
                     ),
                     const SizedBox(height: 16),
                     ActivitiesCard(

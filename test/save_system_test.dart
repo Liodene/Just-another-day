@@ -286,13 +286,13 @@ void main() {
   group('GameTime JSON Serialization', () {
     test('toJson should serialize all game time data', () {
       final gameTime = GameTime(initialHour: 14, initialMinute: 30);
-      gameTime.update(1000); // Add some time
+      gameTime.update(const Duration(milliseconds: 1000)); // Add some time
 
       final json = gameTime.toJson();
 
       expect(json['timeMultiplier'], equals(300.0));
       expect(json['dayCount'], equals(1));
-      expect(json['realTimePlayedMs'], equals(1000.0));
+      expect(json['realTimePlayedMs'], equals(1000));
       expect(json.containsKey('inGameSeconds'), isTrue);
     });
 
@@ -308,7 +308,7 @@ void main() {
 
       expect(gameTime.timeMultiplier, equals(300.0));
       expect(gameTime.dayCount, equals(5));
-      expect(gameTime.realTimePlayedMs, equals(60000.0));
+      expect(gameTime.realTimePlayed.inMilliseconds, equals(60000));
       expect(gameTime.hour, equals(14));
       expect(gameTime.minute, equals(30));
     });
@@ -325,12 +325,12 @@ void main() {
 
     test('round trip should preserve values', () {
       final original = GameTime(initialHour: 18, initialMinute: 45);
-      original.update(5000);
+      original.update(const Duration(milliseconds: 5000));
 
       final restored = GameTime.fromJson(original.toJson());
 
       expect(restored.dayCount, equals(original.dayCount));
-      expect(restored.realTimePlayedMs, equals(original.realTimePlayedMs));
+      expect(restored.realTimePlayed, equals(original.realTimePlayed));
       expect(restored.hour, equals(original.hour));
       expect(restored.minute, equals(original.minute));
     });
@@ -340,14 +340,14 @@ void main() {
     test('should restore state from another game time', () {
       final target = GameTime();
       final source = GameTime(initialHour: 18, initialMinute: 30);
-      source.update(10000);
+      source.update(const Duration(milliseconds: 10000));
 
       target.restoreFrom(source);
 
       expect(target.hour, equals(source.hour));
       expect(target.minute, equals(source.minute));
       expect(target.dayCount, equals(source.dayCount));
-      expect(target.realTimePlayedMs, equals(source.realTimePlayedMs));
+      expect(target.realTimePlayed, equals(source.realTimePlayed));
     });
   });
 
@@ -500,7 +500,7 @@ void main() {
         activityCompletions: {'working': 10, 'studying': 5},
       );
       final gameTime = GameTime(initialHour: 18, initialMinute: 45);
-      gameTime.update(5000);
+      gameTime.update(const Duration(milliseconds: 5000));
 
       final original = GameSaveData(
         character: character,
